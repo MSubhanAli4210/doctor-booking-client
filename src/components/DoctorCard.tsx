@@ -1,42 +1,224 @@
-import { Link } from 'react-router-dom';
-import type { DoctorProfile } from '../types';
+import { Link } from "react-router-dom";
 
-const DoctorCard = ({ doctor }: { doctor: DoctorProfile }) => {
-  const initials = doctor.user.name
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
+export type DoctorCardDoctor = {
+  _id: string;
+
+  name?: string;
+
+  user?: {
+    name?: string;
+    email?: string;
+    profileImage?: string;
+  };
+
+  specialty?: string;
+  specialization?: string;
+
+  experienceYears?: number;
+  experience?: number;
+
+  fees?: number;
+  fee?: number;
+
+  rating?: number;
+  averageRating?: number;
+  totalReviews?: number;
+  reviewCount?: number;
+
+  image?: string;
+  profileImage?: string;
+
+  city?: string;
+  location?: string;
+
+  isAvailable?: boolean;
+};
+
+interface DoctorCardProps {
+  doctor: DoctorCardDoctor;
+}
+
+const UserIcon = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    className="h-10 w-10 text-slate-300"
+    stroke="currentColor"
+    strokeWidth="1.6"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.5 20.1a7.5 7.5 0 0 1 15 0"
+    />
+  </svg>
+);
+
+const StarIcon = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    className="h-4 w-4 text-amber-400"
+  >
+    <path d="M12 2.75l2.82 5.72 6.31.92-4.57 4.45 1.08 6.29L12 17.16l-5.64 2.97 1.08-6.29-4.57-4.45 6.31-.92L12 2.75Z" />
+  </svg>
+);
+
+const ArrowIcon = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    className="h-4 w-4"
+    stroke="currentColor"
+    strokeWidth="2"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M5 12h14m-6-6 6 6-6 6"
+    />
+  </svg>
+);
+
+const LocationIcon = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    className="h-4 w-4"
+    stroke="currentColor"
+    strokeWidth="1.8"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M12 21s6-5.1 6-11a6 6 0 1 0-12 0c0 5.9 6 11 6 11Z"
+    />
+    <circle cx="12" cy="10" r="2" />
+  </svg>
+);
+
+const DoctorCard = ({ doctor }: DoctorCardProps) => {
+  const name = doctor.user?.name || doctor.name || "Doctor";
+
+  const specialty =
+    doctor.specialty || doctor.specialization || "General Physician";
+
+  const experience =
+    doctor.experienceYears ?? doctor.experience ?? 0;
+
+  const fee = doctor.fees ?? doctor.fee ?? 0;
+
+  const rating =
+    doctor.averageRating ?? doctor.rating ?? 4.8;
+
+  const reviews =
+    doctor.totalReviews ?? doctor.reviewCount ?? 0;
+
+  const image =
+    doctor.profileImage ||
+    doctor.user?.profileImage ||
+    doctor.image;
+
+  const location =
+    doctor.city || doctor.location || "Medical Center";
 
   return (
-    <div className="bg-white border border-gray-100 rounded-2xl p-5 hover:shadow-md transition">
-      <div className="flex items-start gap-3 mb-3">
-        <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-sm font-medium text-blue-700 shrink-0 overflow-hidden">
-          {doctor.user.profilePicture ? (
-            <img src={doctor.user.profilePicture} alt={doctor.user.name} className="w-full h-full object-cover" />
-          ) : (
-            initials
-          )}
+    <article className="group overflow-hidden rounded-[28px] border border-slate-200/80 bg-white shadow-[0_8px_30px_rgba(15,23,42,0.05)] transition-all duration-300 hover:-translate-y-1.5 hover:border-blue-200 hover:shadow-[0_20px_50px_rgba(37,99,235,0.12)]">
+      {/* Doctor image */}
+      <div className="relative h-64 overflow-hidden bg-gradient-to-br from-blue-50 via-sky-50 to-indigo-50">
+        {image ? (
+          <img
+            src={image}
+            alt={`Dr. ${name}`}
+            className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.035]"
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center">
+            <div className="flex h-24 w-24 items-center justify-center rounded-full bg-white shadow-sm">
+              <UserIcon />
+            </div>
+          </div>
+        )}
+
+        <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-slate-950/25 to-transparent" />
+
+        {/* Availability */}
+        <div className="absolute left-4 top-4">
+          <span className="inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/90 px-3 py-1.5 text-xs font-semibold text-emerald-700 shadow-sm backdrop-blur-md">
+            <span className="h-2 w-2 rounded-full bg-emerald-500" />
+            {doctor.isAvailable === false
+              ? "Limited availability"
+              : "Available today"}
+          </span>
         </div>
-        <div className="min-w-0">
-          <p className="font-medium text-gray-900 text-sm truncate">{doctor.user.name}</p>
-          <p className="text-xs text-gray-500 mt-0.5">
-            {doctor.specialty} · {doctor.experienceYears} yrs exp
-          </p>
+
+        {/* Rating */}
+        <div className="absolute bottom-4 right-4 flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1.5 text-sm font-bold text-slate-800 shadow-sm backdrop-blur">
+          <StarIcon />
+          {Number(rating).toFixed(1)}
         </div>
       </div>
 
-      <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-        <span className="text-sm font-semibold text-gray-900">${doctor.fees}</span>
-        <Link
-          to={`/doctors/${doctor._id}`}
-          className="text-sm bg-blue-600 text-white px-4 py-1.5 rounded-lg hover:bg-blue-700 transition"
-        >
-          View profile
-        </Link>
+      {/* Content */}
+      <div className="p-5 sm:p-6">
+        <div className="mb-4">
+          <p className="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-blue-600">
+            {specialty}
+          </p>
+
+          <h3 className="text-xl font-bold tracking-tight text-slate-900">
+            Dr. {name}
+          </h3>
+
+          <div className="mt-2 flex items-center gap-1.5 text-sm text-slate-500">
+            <LocationIcon />
+            <span className="truncate">{location}</span>
+          </div>
+        </div>
+
+        <div className="mb-5 grid grid-cols-2 gap-3">
+          <div className="rounded-2xl bg-slate-50 px-3.5 py-3">
+            <p className="text-xs text-slate-500">Experience</p>
+            <p className="mt-1 text-sm font-bold text-slate-900">
+              {experience > 0 ? `${experience}+ years` : "Experienced"}
+            </p>
+          </div>
+
+          <div className="rounded-2xl bg-slate-50 px-3.5 py-3">
+            <p className="text-xs text-slate-500">Patient reviews</p>
+            <p className="mt-1 text-sm font-bold text-slate-900">
+              {reviews > 0 ? `${reviews} reviews` : "Highly rated"}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-end justify-between gap-3 border-t border-slate-100 pt-5">
+          <div>
+            <p className="text-xs text-slate-500">Consultation fee</p>
+
+            <div className="mt-1 flex items-baseline gap-1">
+              <span className="text-xl font-extrabold text-slate-900">
+                {fee > 0 ? `Rs. ${fee.toLocaleString()}` : "Contact"}
+              </span>
+
+              {fee > 0 && (
+                <span className="text-xs text-slate-400">
+                  / visit
+                </span>
+              )}
+            </div>
+          </div>
+
+          <Link
+            to={`/doctors/${doctor._id}`}
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 text-sm font-bold text-white transition-all duration-200 hover:bg-blue-600 active:scale-95"
+          >
+            View profile
+            <ArrowIcon />
+          </Link>
+        </div>
       </div>
-    </div>
+    </article>
   );
 };
 

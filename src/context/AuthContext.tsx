@@ -1,86 +1,150 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
-import type { User } from '../types';
-import axios from 'axios';
+import {
+  createContext,
+  useContext,
+  useState,
+  type ReactNode,
+} from "react";
+
+import type { User } from "../types";
 
 interface AuthContextType {
   user: User | null;
   token: string | null;
   isLoading: boolean;
-  loginUser: (user: User, token: string) => void;
+
+  loginUser: (
+    user: User,
+    token: string,
+  ) => void;
+
   logoutUser: () => void;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext =
+  createContext<AuthContextType | undefined>(
+    undefined,
+  );
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+/* =========================================================
+   GET INITIAL USER
+========================================================= */
 
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+const getInitialUser = (): User | null => {
+  try {
+    const storedUser =
+      localStorage.getItem("user");
 
-  // On first load, verify any stored session against the backend
-  // rather than trusting localStorage blindly.
-  useEffect(() => {
-    const verifySession = async () => {
-      const storedToken = localStorage.getItem('token');
-      const storedUser = localStorage.getItem('user');
+    if (!storedUser) {
+      return null;
+    }
 
-      if (!storedToken || !storedUser) {
-        setIsLoading(false);
-        return;
-      }
+    return JSON.parse(storedUser);
+  } catch {
+    localStorage.removeItem("user");
 
-      try {
-        // Confirm the token is still valid by hitting a protected route
-        const res = await axios.get(`${API_URL}/users/me`, {
-          headers: { Authorization: `Bearer ${storedToken}` },
-        });
+    return null;
+  }
+};
 
-        setToken(storedToken);
-        setUser(res.data.user);
-        // Keep localStorage in sync with the freshest server data
-        localStorage.setItem('user', JSON.stringify(res.data.user));
-      } catch (err) {
-        // Token invalid, expired, or server unreachable — clear stale session
-        console.warn('Session invalid or server unreachable, logging out.');
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        setToken(null);
-        setUser(null);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+/* =========================================================
+   PROVIDER
+========================================================= */
 
-    verifySession();
-  }, []);
+export const AuthProvider = ({
+  children,
+}: {
+  children: ReactNode;
+}) => {
+  /*
+    Load authentication immediately from storage.
 
-  const loginUser = (user: User, token: string) => {
+    This means refreshing the browser will NOT
+    log the user out.
+  */
+
+  const [user, setUser] =
+    useState<User | null>(() =>
+      getInitialUser(),
+    );
+
+  const [token, setToken] =
+    useState<string | null>(() =>
+      localStorage.getItem("token"),
+    );
+
+  /*
+    Because localStorage is read synchronously,
+    there is no session-loading request anymore.
+  */
+
+  const isLoading = false;
+
+  /* =========================================================
+     LOGIN
+  ========================================================= */
+
+  const loginUser = (
+    user: User,
+    token: string,
+  ) => {
     setUser(user);
+
     setToken(token);
-    localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify(user));
+
+    localStorage.setItem(
+      "token",
+      token,
+    );
+
+    localStorage.setItem(
+      "user",
+      JSON.stringify(user),
+    );
   };
+
+  /* =========================================================
+     LOGOUT
+  ========================================================= */
 
   const logoutUser = () => {
     setUser(null);
+
     setToken(null);
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+
+    localStorage.removeItem("token");
+
+    localStorage.removeItem("user");
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, isLoading, loginUser, logoutUser }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        token,
+        isLoading,
+        loginUser,
+        logoutUser,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
 };
 
-export const useAuth = (): AuthContextType => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
+/* =========================================================
+   HOOK
+========================================================= */
+
+export const useAuth =
+  (): AuthContextType => {
+    const context =
+      useContext(AuthContext);
+
+    if (!context) {
+      throw new Error(
+        "useAuth must be used within an AuthProvider",
+      );
+    }
+
+    return context;
+  };
