@@ -3,15 +3,21 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 
+interface AvailabilitySlot {
+  day: string;
+  startTime: string;
+  endTime: string;
+}
+
 interface Doctor {
   _id: string;
   user: { name: string; email: string; profilePicture?: string };
-  specialization: string;
+  specialty: string;
   degree: string;
-  experience: number;
-  fee: number;
-  bio?: string;
-  availableSlots: string[];
+  experienceYears: number;
+  fees: number;
+  about?: string;
+  availability: AvailabilitySlot[];
 }
 
 export default function DoctorDetail() {
@@ -20,7 +26,9 @@ export default function DoctorDetail() {
   const navigate = useNavigate();
 
   const [doctor, setDoctor] = useState<Doctor | null>(null);
-  const [selectedSlot, setSelectedSlot] = useState('');
+  const [selectedDay, setSelectedDay] = useState('');
+  const [selectedTime, setSelectedTime] = useState('');
+  const [date, setDate] = useState('');
   const [loading, setLoading] = useState(true);
   const [booking, setBooking] = useState(false);
   const [error, setError] = useState('');
@@ -48,8 +56,8 @@ export default function DoctorDetail() {
       setError('Only patients can book appointments');
       return;
     }
-    if (!selectedSlot) {
-      setError('Please select a time slot');
+    if (!date || !selectedTime) {
+      setError('Please select a date and time');
       return;
     }
 
@@ -58,7 +66,8 @@ export default function DoctorDetail() {
     try {
       await api.post('/appointments', {
         doctorId: doctor?._id,
-        timeSlot: selectedSlot,
+        date,
+        time: selectedTime,
       });
       navigate('/my-appointments');
     } catch (err: any) {
@@ -83,35 +92,50 @@ export default function DoctorDetail() {
         </div>
         <div>
           <h1 className="text-2xl font-semibold text-gray-900">Dr. {doctor.user.name}</h1>
-          <p className="text-gray-500 text-sm">{doctor.specialization} • {doctor.degree}</p>
-          <p className="text-gray-500 text-sm">{doctor.experience} years experience</p>
+          <p className="text-gray-500 text-sm">{doctor.specialty} • {doctor.degree}</p>
+          <p className="text-gray-500 text-sm">{doctor.experienceYears} years experience</p>
         </div>
       </div>
 
-      {doctor.bio && <p className="text-gray-600 mb-6">{doctor.bio}</p>}
+      {doctor.about && <p className="text-gray-600 mb-6">{doctor.about}</p>}
 
-      <p className="text-lg font-medium text-gray-900 mb-4">Fee: ${doctor.fee}</p>
+      <p className="text-lg font-medium text-gray-900 mb-4">Fee: ${doctor.fees}</p>
 
       <div className="mb-6">
-        <p className="text-sm font-medium text-gray-700 mb-2">Available slots</p>
-        <div className="flex flex-wrap gap-2">
-          {doctor.availableSlots.length === 0 && (
-            <p className="text-sm text-gray-400">No slots available</p>
+        <p className="text-sm font-medium text-gray-700 mb-2">Available days</p>
+        <div className="flex flex-wrap gap-2 mb-4">
+          {(!doctor.availability || doctor.availability.length === 0) && (
+            <p className="text-sm text-gray-400">No availability set</p>
           )}
-          {doctor.availableSlots.map((slot) => (
+          {doctor.availability?.map((slot) => (
             <button
-              key={slot}
-              onClick={() => setSelectedSlot(slot)}
-              className={`px-3 py-1.5 rounded-lg text-sm border ${
-                selectedSlot === slot
+              key={`${slot.day}-${slot.startTime}`}
+              onClick={() => {
+                setSelectedDay(slot.day);
+                setSelectedTime(`${slot.startTime}-${slot.endTime}`);
+              }}
+              className={`px-3 py-1.5 rounded-lg text-sm border capitalize ${
+                selectedDay === slot.day
                   ? 'bg-blue-600 text-white border-blue-600'
                   : 'border-gray-200 text-gray-600 hover:border-blue-300'
               }`}
             >
-              {slot}
+              {slot.day} ({slot.startTime}–{slot.endTime})
             </button>
           ))}
         </div>
+
+        {selectedDay && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Pick a date</label>
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="border border-gray-200 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+        )}
       </div>
 
       {error && <p className="text-red-600 text-sm mb-4">{error}</p>}

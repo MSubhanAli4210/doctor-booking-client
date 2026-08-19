@@ -32,26 +32,17 @@ const Navbar = () => {
           <span className="font-semibold text-gray-900">MediBook</span>
         </Link>
 
-        {user && (
+        {user ? (
           <div className="flex items-center gap-6">
             {user.role === "patient" && (
               <>
-                <Link
-                  to="/"
-                  className="text-sm text-gray-600 hover:text-gray-900"
-                >
+                <Link to="/" className="text-sm text-gray-600 hover:text-gray-900">
                   Find doctors
                 </Link>
-                <Link
-                  to="/my-appointments"
-                  className="text-sm text-gray-600 hover:text-gray-900"
-                >
+                <Link to="/my-appointments" className="text-sm text-gray-600 hover:text-gray-900">
                   My appointments
                 </Link>
-                <Link
-                  to="/chat"
-                  className="text-sm text-gray-600 hover:text-gray-900"
-                >
+                <Link to="/chat" className="text-sm text-gray-600 hover:text-gray-900">
                   Messages
                 </Link>
               </>
@@ -59,22 +50,13 @@ const Navbar = () => {
 
             {user.role === "doctor" && (
               <>
-                <Link
-                  to="/doctor/appointments"
-                  className="text-sm text-gray-600 hover:text-gray-900"
-                >
+                <Link to="/doctor/appointments" className="text-sm text-gray-600 hover:text-gray-900">
                   Appointments
                 </Link>
-                <Link
-                  to="/doctor/profile"
-                  className="text-sm text-gray-600 hover:text-gray-900"
-                >
+                <Link to="/doctor/profile" className="text-sm text-gray-600 hover:text-gray-900">
                   My profile
                 </Link>
-                <Link
-                  to="/chat"
-                  className="text-sm text-gray-600 hover:text-gray-900"
-                >
+                <Link to="/chat" className="text-sm text-gray-600 hover:text-gray-900">
                   Messages
                 </Link>
               </>
@@ -82,16 +64,10 @@ const Navbar = () => {
 
             {user.role === "admin" && (
               <>
-                <Link
-                  to="/admin"
-                  className="text-sm text-gray-600 hover:text-gray-900"
-                >
+                <Link to="/admin" className="text-sm text-gray-600 hover:text-gray-900">
                   Dashboard
                 </Link>
-                <Link
-                  to="/admin/doctors"
-                  className="text-sm text-gray-600 hover:text-gray-900"
-                >
+                <Link to="/admin/doctors" className="text-sm text-gray-600 hover:text-gray-900">
                   Doctors
                 </Link>
               </>
@@ -116,6 +92,21 @@ const Navbar = () => {
                 Log out
               </button>
             </div>
+          </div>
+        ) : (
+          <div className="flex items-center gap-3">
+            <Link
+              to="/login"
+              className="text-sm text-gray-600 hover:text-gray-900"
+            >
+              Log in
+            </Link>
+            <Link
+              to="/register"
+              className="text-sm bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+            >
+              Create account
+            </Link>
           </div>
         )}
       </div>
