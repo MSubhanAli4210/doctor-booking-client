@@ -1,25 +1,35 @@
-import { Routes, Route } from 'react-router-dom';
-import { useAuth } from './context/AuthContext';
-import Navbar from './components/AppNavbar';
-import ProtectedRoute from './components/ProtectedRoute';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import Home from './pages/Home';
-import DoctorDetail from './pages/DoctorDetail';
-import MyAppointments from './pages/MyAppointments';
-import Chat from './pages/Chat';
-import DoctorAppointments from './pages/DoctorAppointments';
-import DoctorProfile from './pages/DoctorProfile';
-import AdminDashboard from './pages/AdminDashboard';
-import AdminDoctors from './pages/AdminDoctors';
+import { Navigate, Route, Routes } from "react-router-dom";
+
+import { useAuth } from "./context/AuthContext";
+
+import Navbar from "./components/AppNavbar";
+import ProtectedRoute from "./components/ProtectedRoute";
+
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import Home from "./pages/Home";
+import DoctorDetail from "./pages/DoctorDetail";
+import MyAppointments from "./pages/MyAppointments";
+import Chat from "./pages/Chat";
+
+import DoctorDashboard from "./pages/DoctorDashboard";
+import DoctorAppointments from "./pages/DoctorAppointments";
+import DoctorProfile from "./pages/DoctorProfile";
+
+import AdminDashboard from "./pages/AdminDashboard";
+import AdminDoctors from "./pages/AdminDoctors";
+import AdminPatients from "./pages/AdminPatients";
+import AdminAppointments from "./pages/AdminAppointments";
+
+import PatientProfile from "./pages/PatientProfile";
 
 function App() {
-  const { user, isLoading } = useAuth();
+  const { isLoading } = useAuth();
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-500 text-sm">Loading...</p>
+      <div className="flex min-h-screen items-center justify-center">
+        <p className="text-sm text-gray-500">Loading...</p>
       </div>
     );
   }
@@ -27,60 +37,126 @@ function App() {
   return (
     <>
       <Navbar />
+
       <Routes>
-        {/* Public routes */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+        {/* =========================
+            PUBLIC ROUTES
+        ========================= */}
+
         <Route path="/" element={<Home />} />
+
+        <Route path="/login" element={<Login />} />
+
+        <Route path="/register" element={<Register />} />
+
         <Route path="/doctors/:id" element={<DoctorDetail />} />
 
-        {/* Patient-only routes */}
+        {/* =========================
+            PATIENT ROUTES
+        ========================= */}
+
         <Route
           path="/my-appointments"
           element={
-            <ProtectedRoute allowedRoles={['patient']}>
+            <ProtectedRoute allowedRoles={["patient"]}>
               <MyAppointments />
             </ProtectedRoute>
           }
         />
 
-        {/* Doctor-only routes */}
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute allowedRoles={["patient"]}>
+              <PatientProfile />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* =========================
+            DOCTOR ROUTES
+        ========================= */}
+
+        <Route
+          path="/doctor/dashboard"
+          element={
+            <ProtectedRoute allowedRoles={["doctor"]}>
+              <DoctorDashboard />
+            </ProtectedRoute>
+          }
+        />
+
         <Route
           path="/doctor/appointments"
           element={
-            <ProtectedRoute allowedRoles={['doctor']}>
+            <ProtectedRoute allowedRoles={["doctor"]}>
               <DoctorAppointments />
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/doctor/profile"
           element={
-            <ProtectedRoute allowedRoles={['doctor']}>
+            <ProtectedRoute allowedRoles={["doctor"]}>
               <DoctorProfile />
             </ProtectedRoute>
           }
         />
 
-        {/* Admin-only routes */}
+        {/* =========================
+            ADMIN ROUTES
+        ========================= */}
+
         <Route
           path="/admin"
           element={
-            <ProtectedRoute allowedRoles={['admin']}>
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <Navigate to="/admin/dashboard" replace />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/dashboard"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
               <AdminDashboard />
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/admin/doctors"
           element={
-            <ProtectedRoute allowedRoles={['admin']}>
+            <ProtectedRoute allowedRoles={["admin"]}>
               <AdminDoctors />
             </ProtectedRoute>
           }
         />
 
-        {/* Any logged-in user (patient, doctor, or admin) */}
+        <Route
+          path="/admin/patients"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <AdminPatients />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/appointments"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <AdminAppointments />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* =========================
+            CHAT
+        ========================= */}
+
         <Route
           path="/chat"
           element={

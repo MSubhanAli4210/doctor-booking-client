@@ -2,6 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { getMyAppointments, cancelAppointment } from "../api/appointmentApi";
 
+import PaymentModal from "../components/PaymentModal";
+
+import type { PatientAppointment } from "../api/appointmentApi";
+
 type AppointmentStatus = "pending" | "confirmed" | "cancelled" | "completed";
 
 type PaymentStatus = "unpaid" | "paid";

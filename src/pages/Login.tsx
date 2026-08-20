@@ -235,7 +235,7 @@ const Login = () => {
       loginUser(user, token);
 
       if (user.role === "admin") {
-        navigate("/admin");
+        navigate("/admin/dashboard");
       } else if (user.role === "doctor") {
         navigate("/doctor/appointments");
       } else {
