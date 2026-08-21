@@ -272,7 +272,7 @@ const DoctorCard = ({
             <div className="mt-1 flex items-baseline gap-1">
               <span className="text-xl font-extrabold text-slate-900">
                 {fee > 0
-                  ? `Rs. ${fee.toLocaleString()}`
+                  ? `$. ${fee.toLocaleString()}`
                   : "Contact"}
               </span>
 
