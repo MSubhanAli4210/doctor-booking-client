@@ -1,17 +1,53 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-
-import type { SubmitEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import type { FormEvent, KeyboardEvent } from "react";
+import { useSearchParams } from "react-router-dom";
 
 import {
   getConversationMessages,
   getConversations,
+  getOnlineUsers,
   markConversationRead,
   sendChatMessage,
 } from "../api/chatApi";
 
-import type { ChatConversation, ChatMessage, ChatUser } from "../api/chatApi";
+import type {
+  ChatConversation,
+  ChatMessage,
+  ChatUser,
+} from "../api/chatApi";
 
-import { connectChatSocket, disconnectChatSocket } from "../lib/chatSocket";
+import {
+  connectChatSocket,
+  disconnectChatSocket,
+} from "../lib/chatSocket";
+
+const decodeJwtPayload = (token: string) => {
+  try {
+    const [, payload] = token.split(".");
+
+    if (!payload) {
+      return null;
+    }
+
+    const normalizedPayload = payload
+      .replace(/-/g, "+")
+      .replace(/_/g, "/");
+
+    const paddedPayload =
+      normalizedPayload +
+      "=".repeat((4 - (normalizedPayload.length % 4)) % 4);
+
+    return JSON.parse(atob(paddedPayload));
+  } catch {
+    return null;
+  }
+};
 
 const getStoredUserId = (): string => {
   try {
@@ -20,8 +56,13 @@ const getStoredUserId = (): string => {
     if (storedUser) {
       const parsed = JSON.parse(storedUser);
 
-      if (parsed?._id) return parsed._id;
-      if (parsed?.id) return parsed.id;
+      if (parsed?._id) {
+        return parsed._id;
+      }
+
+      if (parsed?.id) {
+        return parsed.id;
+      }
     }
   } catch {}
 
@@ -30,24 +71,36 @@ const getStoredUserId = (): string => {
     localStorage.getItem("accessToken") ||
     localStorage.getItem("authToken");
 
-  if (!token) return "";
-
-  try {
-    const payload = JSON.parse(atob(token.split(".")[1]));
-
-    return payload._id || payload.id || payload.userId || "";
-  } catch {
+  if (!token) {
     return "";
   }
+
+  const payload = decodeJwtPayload(token);
+
+  if (!payload) {
+    return "";
+  }
+
+  return payload._id || payload.id || payload.userId || "";
 };
 
-const getUserId = (user?: string | ChatUser | null) => {
-  if (!user) return "";
+const getUserId = (
+  user?: string | ChatUser | null,
+): string => {
+  if (!user) {
+    return "";
+  }
 
-  return typeof user === "string" ? user : user._id;
+  if (typeof user === "string") {
+    return user;
+  }
+
+  return user._id || "";
 };
 
-const getMessageConversationId = (message: ChatMessage) => {
+const getMessageConversationId = (
+  message: ChatMessage,
+): string => {
   if (typeof message.conversation === "string") {
     return message.conversation;
   }
@@ -55,27 +108,25 @@ const getMessageConversationId = (message: ChatMessage) => {
   return message.conversation?._id || "";
 };
 
-const getMessageText = (message?: ChatMessage | null) => {
-  if (!message) return "";
-
-  return message.content || message.message || message.text || "";
-};
-
 const getOtherUser = (
   conversation: ChatConversation,
   currentUserId: string,
 ): ChatUser | undefined => {
-  if (conversation.otherUser) {
-    return conversation.otherUser;
+  if (conversation.patient?._id === currentUserId) {
+    return conversation.doctor?.user;
   }
 
-  return conversation.participants?.find(
-    (participant) => participant._id !== currentUserId,
-  );
+  if (conversation.doctor?.user?._id === currentUserId) {
+    return conversation.patient;
+  }
+
+  return conversation.patient || conversation.doctor?.user;
 };
 
-const getInitials = (name?: string) => {
-  if (!name) return "?";
+const getInitials = (name?: string): string => {
+  if (!name) {
+    return "?";
+  }
 
   return name
     .split(" ")
@@ -86,19 +137,34 @@ const getInitials = (name?: string) => {
     .toUpperCase();
 };
 
-const formatMessageTime = (date?: string) => {
-  if (!date) return "";
+const formatMessageTime = (date?: string): string => {
+  if (!date) {
+    return "";
+  }
 
-  return new Date(date).toLocaleTimeString([], {
+  const parsedDate = new Date(date);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return "";
+  }
+
+  return parsedDate.toLocaleTimeString([], {
     hour: "2-digit",
     minute: "2-digit",
   });
 };
 
-const formatConversationTime = (date?: string) => {
-  if (!date) return "";
+const formatConversationTime = (date?: string): string => {
+  if (!date) {
+    return "";
+  }
 
   const messageDate = new Date(date);
+
+  if (Number.isNaN(messageDate.getTime())) {
+    return "";
+  }
+
   const today = new Date();
 
   const sameDay =
@@ -120,9 +186,16 @@ const formatConversationTime = (date?: string) => {
 };
 
 const Chat = () => {
+  const [searchParams] = useSearchParams();
+
+  const requestedConversationId =
+    searchParams.get("conversation") || "";
+
   const currentUserId = useMemo(() => getStoredUserId(), []);
 
-  const [conversations, setConversations] = useState<ChatConversation[]>([]);
+  const [conversations, setConversations] = useState<
+    ChatConversation[]
+  >([]);
 
   const [activeConversation, setActiveConversation] =
     useState<ChatConversation | null>(null);
@@ -131,11 +204,15 @@ const Chat = () => {
 
   const [messageInput, setMessageInput] = useState("");
 
-  const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
+  const [onlineUsers, setOnlineUsers] = useState<Set<string>>(
+    new Set(),
+  );
 
-  const [loadingConversations, setLoadingConversations] = useState(true);
+  const [loadingConversations, setLoadingConversations] =
+    useState(true);
 
-  const [loadingMessages, setLoadingMessages] = useState(false);
+  const [loadingMessages, setLoadingMessages] =
+    useState(false);
 
   const [sending, setSending] = useState(false);
 
@@ -146,36 +223,50 @@ const Chat = () => {
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    activeConversationIdRef.current = activeConversation?._id || "";
+    activeConversationIdRef.current =
+      activeConversation?._id || "";
   }, [activeConversation]);
 
-  const scrollToBottom = useCallback(() => {
-    requestAnimationFrame(() => {
-      messagesEndRef.current?.scrollIntoView({
-        behavior: "smooth",
+  const scrollToBottom = useCallback(
+    (behavior: ScrollBehavior = "smooth") => {
+      requestAnimationFrame(() => {
+        messagesEndRef.current?.scrollIntoView({
+          behavior,
+        });
       });
-    });
-  }, []);
+    },
+    [],
+  );
 
   useEffect(() => {
     scrollToBottom();
   }, [messages, scrollToBottom]);
 
-  const addMessageIfMissing = useCallback((message: ChatMessage) => {
-    setMessages((previous) => {
-      const exists = previous.some((item) => item._id === message._id);
+  const addMessageIfMissing = useCallback(
+    (message: ChatMessage) => {
+      setMessages((previous) => {
+        const exists = previous.some(
+          (item) => item._id === message._id,
+        );
 
-      if (exists) return previous;
+        if (exists) {
+          return previous;
+        }
 
-      return [...previous, message];
-    });
-  }, []);
+        return [...previous, message];
+      });
+    },
+    [],
+  );
 
   const updateConversationWithMessage = useCallback(
     (message: ChatMessage) => {
-      const conversationId = getMessageConversationId(message);
+      const conversationId =
+        getMessageConversationId(message);
 
-      if (!conversationId) return;
+      if (!conversationId) {
+        return;
+      }
 
       const senderId = getUserId(message.sender);
 
@@ -185,17 +276,20 @@ const Chat = () => {
             return conversation;
           }
 
-          const isActive = activeConversationIdRef.current === conversationId;
+          const isActive =
+            activeConversationIdRef.current ===
+            conversationId;
 
-          const receivedFromOtherUser = senderId !== currentUserId;
+          const receivedFromOtherUser =
+            senderId !== currentUserId;
 
           return {
             ...conversation,
-
-            lastMessage: message,
-
-            updatedAt: message.createdAt || new Date().toISOString(),
-
+            lastMessage: message.content,
+            lastMessageAt:
+              message.createdAt || new Date().toISOString(),
+            updatedAt:
+              message.createdAt || new Date().toISOString(),
             unreadCount:
               receivedFromOtherUser && !isActive
                 ? (conversation.unreadCount || 0) + 1
@@ -203,13 +297,41 @@ const Chat = () => {
           };
         });
 
-        return updated.sort((a, b) => {
-          const aDate = new Date(a.updatedAt || 0).getTime();
+        return [...updated].sort((a, b) => {
+          const aDate = new Date(
+            a.lastMessageAt ||
+              a.updatedAt ||
+              a.createdAt ||
+              0,
+          ).getTime();
 
-          const bDate = new Date(b.updatedAt || 0).getTime();
+          const bDate = new Date(
+            b.lastMessageAt ||
+              b.updatedAt ||
+              b.createdAt ||
+              0,
+          ).getTime();
 
           return bDate - aDate;
         });
+      });
+
+      setActiveConversation((previous) => {
+        if (
+          !previous ||
+          previous._id !== conversationId
+        ) {
+          return previous;
+        }
+
+        return {
+          ...previous,
+          lastMessage: message.content,
+          lastMessageAt:
+            message.createdAt || new Date().toISOString(),
+          updatedAt:
+            message.createdAt || new Date().toISOString(),
+        };
       });
     },
     [currentUserId],
@@ -222,42 +344,112 @@ const Chat = () => {
 
       const data = await getConversations();
 
-      setConversations(data);
+      const sorted = [...data].sort((a, b) => {
+        const aDate = new Date(
+          a.lastMessageAt ||
+            a.updatedAt ||
+            a.createdAt ||
+            0,
+        ).getTime();
 
-      if (data.length > 0 && !activeConversationIdRef.current) {
-        setActiveConversation(data[0]);
-      }
+        const bDate = new Date(
+          b.lastMessageAt ||
+            b.updatedAt ||
+            b.createdAt ||
+            0,
+        ).getTime();
+
+        return bDate - aDate;
+      });
+
+      setConversations(sorted);
+
+      setActiveConversation((previous) => {
+        if (requestedConversationId) {
+          const requestedConversation = sorted.find(
+            (conversation) =>
+              conversation._id ===
+              requestedConversationId,
+          );
+
+          if (requestedConversation) {
+            return requestedConversation;
+          }
+        }
+
+        if (previous?._id) {
+          const refreshedConversation = sorted.find(
+            (conversation) =>
+              conversation._id === previous._id,
+          );
+
+          if (refreshedConversation) {
+            return refreshedConversation;
+          }
+        }
+
+        return sorted[0] || null;
+      });
     } catch (error) {
       console.error(error);
       setError("Unable to load conversations.");
     } finally {
       setLoadingConversations(false);
     }
-  }, []);
+  }, [requestedConversationId]);
 
   useEffect(() => {
-    loadConversations();
+    void loadConversations();
   }, [loadConversations]);
 
   useEffect(() => {
     const socket = connectChatSocket();
 
     const handleNewMessage = (
-      payload: ChatMessage | { message: ChatMessage },
+      payload:
+        | ChatMessage
+        | {
+            message: ChatMessage;
+          },
     ) => {
-      const incomingMessage: ChatMessage =
-        "_id" in payload ? payload : payload.message;
+      const incomingMessage =
+        "_id" in payload
+          ? payload
+          : payload.message;
 
-      if (!incomingMessage?._id) return;
+      if (!incomingMessage?._id) {
+        return;
+      }
 
-      const conversationId = getMessageConversationId(incomingMessage);
+      const conversationId =
+        getMessageConversationId(incomingMessage);
+
+      if (!conversationId) {
+        return;
+      }
 
       updateConversationWithMessage(incomingMessage);
 
-      if (conversationId === activeConversationIdRef.current) {
+      if (
+        conversationId ===
+        activeConversationIdRef.current
+      ) {
         addMessageIfMissing(incomingMessage);
 
-        markConversationRead(conversationId).catch(console.error);
+        void markConversationRead(
+          conversationId,
+        ).catch(console.error);
+
+        setConversations((previous) =>
+          previous.map((conversation) =>
+            conversation._id === conversationId
+              ? {
+                  ...conversation,
+                  unreadCount: 0,
+                }
+              : conversation,
+          ),
+        );
       }
     };
 
@@ -274,7 +466,9 @@ const Chat = () => {
           ? payload
           : payload.userId || payload._id || "";
 
-      if (!userId) return;
+      if (!userId) {
+        return;
+      }
 
       setOnlineUsers((previous) => {
         const next = new Set(previous);
@@ -296,7 +490,9 @@ const Chat = () => {
           ? payload
           : payload.userId || payload._id || "";
 
-      if (!userId) return;
+      if (!userId) {
+        return;
+      }
 
       setOnlineUsers((previous) => {
         const next = new Set(previous);
@@ -306,20 +502,18 @@ const Chat = () => {
     };
 
     socket.on("newMessage", handleNewMessage);
-
     socket.on("userOnline", handleUserOnline);
-
     socket.on("userOffline", handleUserOffline);
 
-    socket.on("onlineUsers", (users: string[]) => {
-      setOnlineUsers(new Set(users));
-    });
+    void getOnlineUsers()
+      .then((users) => {
+        setOnlineUsers(new Set(users));
+      })
+      .catch(console.error);
 
     return () => {
       socket.off("newMessage", handleNewMessage);
-
       socket.off("userOnline", handleUserOnline);
-
       socket.off("userOffline", handleUserOffline);
 
       disconnectChatSocket();
@@ -327,23 +521,32 @@ const Chat = () => {
   }, [addMessageIfMissing, updateConversationWithMessage]);
 
   useEffect(() => {
-    if (!activeConversation?._id) {
+    const conversationId = activeConversation?._id;
+
+    if (!conversationId) {
       setMessages([]);
       return;
     }
+
+    let cancelled = false;
 
     const loadMessages = async () => {
       try {
         setLoadingMessages(true);
         setError("");
 
-        const data = await getConversationMessages(activeConversation._id);
+        const data =
+          await getConversationMessages(conversationId);
+
+        if (cancelled) {
+          return;
+        }
 
         setMessages(data);
 
         setConversations((previous) =>
           previous.map((conversation) =>
-            conversation._id === activeConversation._id
+            conversation._id === conversationId
               ? {
                   ...conversation,
                   unreadCount: 0,
@@ -352,25 +555,44 @@ const Chat = () => {
           ),
         );
 
-        await markConversationRead(activeConversation._id);
-      } catch (error) {
-        console.error(error);
+        void markConversationRead(
+          conversationId,
+        ).catch(console.error);
 
+        requestAnimationFrame(() => {
+          messagesEndRef.current?.scrollIntoView({
+            behavior: "auto",
+          });
+        });
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        console.error(error);
         setError("Unable to load messages.");
       } finally {
-        setLoadingMessages(false);
+        if (!cancelled) {
+          setLoadingMessages(false);
+        }
       }
     };
 
-    loadMessages();
+    void loadMessages();
+
+    return () => {
+      cancelled = true;
+    };
   }, [activeConversation?._id]);
 
-  const handleSendMessage = async (event: SubmitEvent) => {
-    event.preventDefault();
-
+  const sendCurrentMessage = useCallback(async () => {
     const content = messageInput.trim();
 
-    if (!content || !activeConversation || sending) {
+    if (
+      !content ||
+      !activeConversation?._id ||
+      sending
+    ) {
       return;
     }
 
@@ -378,93 +600,146 @@ const Chat = () => {
       setSending(true);
       setError("");
 
-      const message = await sendChatMessage(activeConversation._id, content);
+      const message = await sendChatMessage(
+        activeConversation._id,
+        content,
+      );
 
       const normalizedMessage: ChatMessage = {
         ...message,
-
-        conversation: message.conversation || activeConversation._id,
+        conversation:
+          message.conversation ||
+          activeConversation._id,
       };
 
       addMessageIfMissing(normalizedMessage);
-
       updateConversationWithMessage(normalizedMessage);
 
       setMessageInput("");
     } catch (error) {
       console.error(error);
-
       setError("Message could not be sent.");
     } finally {
       setSending(false);
     }
+  }, [
+    activeConversation,
+    addMessageIfMissing,
+    messageInput,
+    sending,
+    updateConversationWithMessage,
+  ]);
+
+  const handleSubmit = (
+    event: FormEvent<HTMLFormElement>,
+  ) => {
+    event.preventDefault();
+    void sendCurrentMessage();
   };
 
-  const activeOtherUser = activeConversation
-    ? getOtherUser(activeConversation, currentUserId)
-    : undefined;
+  const handleKeyDown = (
+    event: KeyboardEvent<HTMLTextAreaElement>,
+  ) => {
+    if (
+      event.key === "Enter" &&
+      !event.shiftKey
+    ) {
+      event.preventDefault();
+      void sendCurrentMessage();
+    }
+  };
 
-  const activeUserOnline =
-    activeOtherUser && onlineUsers.has(activeOtherUser._id);
+  const activeOtherUser =
+    activeConversation
+      ? getOtherUser(
+          activeConversation,
+          currentUserId,
+        )
+      : undefined;
+
+  const activeUserOnline = Boolean(
+    activeOtherUser &&
+      onlineUsers.has(activeOtherUser._id),
+  );
 
   return (
     <div className="min-h-[calc(100vh-70px)] bg-slate-50 p-4 md:p-6">
       <div className="mx-auto grid h-[calc(100vh-120px)] min-h-[600px] max-w-7xl grid-cols-1 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm md:grid-cols-[340px_1fr]">
-        {/* Sidebar */}
-
         <aside className="flex min-w-0 flex-col border-r border-slate-200">
           <div className="flex h-[74px] items-center justify-between border-b border-slate-200 px-5">
-            <h2 className="text-xl font-bold text-slate-900">Messages</h2>
+            <h2 className="text-xl font-bold text-slate-900">
+              Messages
+            </h2>
 
             <button
-              onClick={loadConversations}
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-xl transition hover:bg-slate-200"
+              type="button"
+              onClick={() => void loadConversations()}
+              disabled={loadingConversations}
+              title="Refresh conversations"
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-xl transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50"
             >
               ↻
             </button>
           </div>
 
           <div className="flex-1 overflow-y-auto">
-            {loadingConversations && (
-              <div className="flex h-full items-center justify-center p-8 text-sm text-slate-500">
-                Loading conversations...
-              </div>
-            )}
+            {loadingConversations &&
+              conversations.length === 0 && (
+                <div className="flex h-full items-center justify-center p-8 text-sm text-slate-500">
+                  Loading conversations...
+                </div>
+              )}
 
-            {!loadingConversations && conversations.length === 0 && (
-              <div className="flex h-full flex-col items-center justify-center p-8 text-center">
-                <div className="mb-3 text-4xl">💬</div>
+            {!loadingConversations &&
+              conversations.length === 0 && (
+                <div className="flex h-full flex-col items-center justify-center p-8 text-center">
+                  <div className="mb-3 text-4xl">
+                    💬
+                  </div>
 
-                <p className="font-medium text-slate-700">
-                  No conversations yet
-                </p>
+                  <p className="font-medium text-slate-700">
+                    No conversations yet
+                  </p>
 
-                <p className="mt-1 text-sm text-slate-400">
-                  Start chatting with a doctor or patient.
-                </p>
-              </div>
-            )}
+                  <p className="mt-1 text-sm text-slate-400">
+                    Start chatting with a doctor or patient.
+                  </p>
+                </div>
+              )}
 
             {conversations.map((conversation) => {
-              const otherUser = getOtherUser(conversation, currentUserId);
+              const otherUser = getOtherUser(
+                conversation,
+                currentUserId,
+              );
 
-              const isOnline = !!otherUser && onlineUsers.has(otherUser._id);
+              const isOnline = Boolean(
+                otherUser &&
+                  onlineUsers.has(otherUser._id),
+              );
 
-              const isActive = activeConversation?._id === conversation._id;
+              const isActive =
+                activeConversation?._id ===
+                conversation._id;
 
               return (
                 <button
+                  type="button"
                   key={conversation._id}
-                  onClick={() => setActiveConversation(conversation)}
+                  onClick={() =>
+                    setActiveConversation(conversation)
+                  }
                   className={`flex w-full items-center gap-3 border-b border-slate-100 px-4 py-4 text-left transition ${
-                    isActive ? "bg-blue-50" : "hover:bg-slate-50"
+                    isActive
+                      ? "bg-blue-50"
+                      : "hover:bg-slate-50"
                   }`}
                 >
                   <div className="relative shrink-0">
                     {otherUser?.profilePicture ? (
                       <img
                         src={otherUser.profilePicture}
-                        alt={otherUser.name}
+                        alt={otherUser.name || "User"}
                         className="h-12 w-12 rounded-full object-cover"
                       />
                     ) : (
@@ -474,23 +749,20 @@ const Chat = () => {
                     )}
 
                     {isOnline && (
-                      <span
-                        className="
-                        bottom-0 right-0 h-3.5 w-3.5 rounded-full border-2 border-white bg-green-500 absolute
-      "
-                      />
+                      <span className="absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-2 border-white bg-green-500" />
                     )}
                   </div>
 
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-2">
                       <p className="truncate font-semibold text-slate-900">
-                        {otherUser?.name || "Conversation"}
+                        {otherUser?.name ||
+                          "Conversation"}
                       </p>
 
                       <span className="shrink-0 text-[11px] text-slate-400">
                         {formatConversationTime(
-                          conversation.lastMessage?.createdAt ||
+                          conversation.lastMessageAt ||
                             conversation.updatedAt,
                         )}
                       </span>
@@ -498,7 +770,7 @@ const Chat = () => {
 
                     <div className="mt-1 flex items-center justify-between gap-2">
                       <p className="truncate text-sm text-slate-500">
-                        {getMessageText(conversation.lastMessage) ||
+                        {conversation.lastMessage ||
                           "No messages yet"}
                       </p>
 
@@ -516,12 +788,12 @@ const Chat = () => {
           </div>
         </aside>
 
-        {/* Chat */}
-
         <main className="flex min-h-0 min-w-0 flex-col">
           {!activeConversation ? (
             <div className="flex h-full flex-col items-center justify-center text-center">
-              <div className="mb-3 text-5xl">💬</div>
+              <div className="mb-3 text-5xl">
+                💬
+              </div>
 
               <h2 className="text-xl font-bold text-slate-900">
                 Your Messages
@@ -533,20 +805,25 @@ const Chat = () => {
             </div>
           ) : (
             <>
-              {/* Header */}
-
               <div className="flex h-[74px] shrink-0 items-center border-b border-slate-200 px-5">
                 <div className="flex items-center gap-3">
                   <div className="relative">
                     {activeOtherUser?.profilePicture ? (
                       <img
-                        src={activeOtherUser.profilePicture}
-                        alt={activeOtherUser.name}
+                        src={
+                          activeOtherUser.profilePicture
+                        }
+                        alt={
+                          activeOtherUser.name ||
+                          "User"
+                        }
                         className="h-11 w-11 rounded-full object-cover"
                       />
                     ) : (
                       <div className="flex h-11 w-11 items-center justify-center rounded-full bg-blue-600 font-bold text-white">
-                        {getInitials(activeOtherUser?.name)}
+                        {getInitials(
+                          activeOtherUser?.name,
+                        )}
                       </div>
                     )}
 
@@ -557,21 +834,24 @@ const Chat = () => {
 
                   <div>
                     <h3 className="font-semibold text-slate-900">
-                      {activeOtherUser?.name || "Conversation"}
+                      {activeOtherUser?.name ||
+                        "Conversation"}
                     </h3>
 
                     <p
                       className={`text-xs ${
-                        activeUserOnline ? "text-green-500" : "text-slate-400"
+                        activeUserOnline
+                          ? "text-green-500"
+                          : "text-slate-400"
                       }`}
                     >
-                      {activeUserOnline ? "Online" : "Offline"}
+                      {activeUserOnline
+                        ? "Online"
+                        : "Offline"}
                     </p>
                   </div>
                 </div>
               </div>
-
-              {/* Messages */}
 
               <div className="flex-1 overflow-y-auto bg-slate-50 p-4 md:p-6">
                 {loadingMessages ? (
@@ -580,7 +860,9 @@ const Chat = () => {
                   </div>
                 ) : messages.length === 0 ? (
                   <div className="flex h-full flex-col items-center justify-center text-center">
-                    <div className="mb-2 text-4xl">👋</div>
+                    <div className="mb-2 text-4xl">
+                      👋
+                    </div>
 
                     <p className="font-medium text-slate-700">
                       No messages yet
@@ -592,13 +874,17 @@ const Chat = () => {
                   </div>
                 ) : (
                   messages.map((message) => {
-                    const mine = getUserId(message.sender) === currentUserId;
+                    const mine =
+                      getUserId(message.sender) ===
+                      currentUserId;
 
                     return (
                       <div
                         key={message._id}
                         className={`mb-3 flex ${
-                          mine ? "justify-end" : "justify-start"
+                          mine
+                            ? "justify-end"
+                            : "justify-start"
                         }`}
                       >
                         <div
@@ -609,19 +895,27 @@ const Chat = () => {
                           }`}
                         >
                           <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">
-                            {getMessageText(message)}
+                            {message.content}
                           </p>
 
                           <div
                             className={`mt-1 flex items-center justify-end gap-1 text-[10px] ${
-                              mine ? "text-blue-100" : "text-slate-400"
+                              mine
+                                ? "text-blue-100"
+                                : "text-slate-400"
                             }`}
                           >
-                            <span>{formatMessageTime(message.createdAt)}</span>
+                            <span>
+                              {formatMessageTime(
+                                message.createdAt,
+                              )}
+                            </span>
 
                             {mine && (
                               <span>
-                                {message.read || message.isRead ? "✓✓" : "✓"}
+                                {message.read
+                                  ? "✓✓"
+                                  : "✓"}
                               </span>
                             )}
                           </div>
@@ -640,34 +934,36 @@ const Chat = () => {
                 </div>
               )}
 
-              {/* Input */}
-
               <form
-                onSubmit={handleSendMessage}
+                onSubmit={handleSubmit}
                 className="flex shrink-0 items-end gap-3 border-t border-slate-200 bg-white p-4"
               >
                 <textarea
                   value={messageInput}
-                  onChange={(e) => setMessageInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-
-                      handleSendMessage(e as unknown as SubmitEvent);
-                    }
-                  }}
+                  onChange={(event) =>
+                    setMessageInput(
+                      event.target.value,
+                    )
+                  }
+                  onKeyDown={handleKeyDown}
                   rows={1}
                   maxLength={2000}
+                  disabled={sending}
                   placeholder="Type a message..."
-                  className="min-h-[46px] flex-1 resize-none rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className="min-h-[46px] flex-1 resize-none rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-50"
                 />
 
                 <button
                   type="submit"
-                  disabled={!messageInput.trim() || sending}
+                  disabled={
+                    !messageInput.trim() ||
+                    sending
+                  }
                   className="h-[46px] rounded-xl bg-blue-600 px-6 font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {sending ? "Sending..." : "Send"}
+                  {sending
+                    ? "Sending..."
+                    : "Send"}
                 </button>
               </form>
             </>

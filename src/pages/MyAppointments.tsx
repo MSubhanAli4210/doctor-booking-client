@@ -5,6 +5,7 @@ import {
 } from "react";
 
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 import {
   cancelAppointment,
@@ -15,6 +16,8 @@ import type {
   PatientAppointment,
 } from "../api/appointmentApi";
 
+import { startConversation } from "../api/chatApi";
+
 import PaymentModal from "../components/PaymentModal";
 
 type FilterType =
@@ -24,63 +27,42 @@ type FilterType =
   | "cancelled"
   | "completed";
 
-const formatDate = (
-  value: string,
-) => {
+const formatDate = (value: string) => {
   if (!value) {
     return "Date unavailable";
   }
 
-  const cleanDate =
-    value.includes("T")
-      ? value.split("T")[0]
-      : value;
+  const cleanDate = value.includes("T")
+    ? value.split("T")[0]
+    : value;
 
-  const date =
-    new Date(
-      `${cleanDate}T12:00:00`,
-    );
+  const date = new Date(`${cleanDate}T12:00:00`);
 
-  if (
-    Number.isNaN(
-      date.getTime(),
-    )
-  ) {
+  if (Number.isNaN(date.getTime())) {
     return value;
   }
 
-  return new Intl.DateTimeFormat(
-    "en-US",
-    {
-      weekday: "short",
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    },
-  ).format(date);
+  return new Intl.DateTimeFormat("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(date);
 };
 
-const formatTime = (
-  value: string,
-) => {
+const formatTime = (value: string) => {
   if (!value) {
     return "Time unavailable";
   }
 
-  const match =
-    value.match(
-      /^(\d{1,2}):(\d{2})$/,
-    );
+  const match = value.match(/^(\d{1,2}):(\d{2})$/);
 
   if (!match) {
     return value;
   }
 
-  const hours =
-    Number(match[1]);
-
-  const minutes =
-    match[2];
+  const hours = Number(match[1]);
+  const minutes = match[2];
 
   const period =
     hours >= 12
@@ -101,33 +83,47 @@ const getStatusStyle = (
       return {
         badge:
           "border-emerald-200 bg-emerald-50 text-emerald-700",
-        dot:
-          "bg-emerald-500",
+        dot: "bg-emerald-500",
       };
 
     case "completed":
       return {
         badge:
           "border-blue-200 bg-blue-50 text-blue-700",
-        dot:
-          "bg-blue-500",
+        dot: "bg-blue-500",
       };
 
     case "cancelled":
       return {
         badge:
           "border-red-200 bg-red-50 text-red-700",
-        dot:
-          "bg-red-500",
+        dot: "bg-red-500",
       };
 
     default:
       return {
         badge:
           "border-amber-200 bg-amber-50 text-amber-700",
-        dot:
-          "bg-amber-500",
+        dot: "bg-amber-500",
       };
+  }
+};
+
+const getPaymentStyle = (
+  status: string,
+) => {
+  switch (status) {
+    case "paid":
+      return "border-emerald-200 bg-emerald-50 text-emerald-700";
+
+    case "refunded":
+      return "border-blue-200 bg-blue-50 text-blue-700";
+
+    case "failed":
+      return "border-red-200 bg-red-50 text-red-700";
+
+    default:
+      return "border-slate-200 bg-slate-50 text-slate-600";
   }
 };
 
@@ -135,16 +131,10 @@ const getErrorMessage = (
   error: unknown,
   fallback: string,
 ) => {
-  if (
-    axios.isAxiosError(
-      error,
-    )
-  ) {
+  if (axios.isAxiosError(error)) {
     return (
-      error.response?.data
-        ?.message ||
-      error.response?.data
-        ?.error ||
+      error.response?.data?.message ||
+      error.response?.data?.error ||
       fallback
     );
   }
@@ -167,7 +157,6 @@ const CalendarIcon = () => (
       height="16"
       rx="3"
     />
-
     <path d="M8 3v4M16 3v4M3 10h18" />
   </svg>
 );
@@ -215,6 +204,22 @@ const RefreshIcon = () => (
   </svg>
 );
 
+const MessageIcon = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+    className="h-4 w-4"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M21 12a8 8 0 0 1-8 8H7l-4 2 1.3-4.3A8.5 8.5 0 1 1 21 12Z"
+    />
+  </svg>
+);
+
 const AppointmentSkeleton = () => (
   <div className="animate-pulse rounded-[28px] border border-slate-200 bg-white p-5 sm:p-6">
     <div className="flex gap-4">
@@ -236,13 +241,12 @@ const AppointmentSkeleton = () => (
 );
 
 export default function MyAppointments() {
+  const navigate = useNavigate();
+
   const [
     appointments,
     setAppointments,
-  ] =
-    useState<
-      PatientAppointment[]
-    >([]);
+  ] = useState<PatientAppointment[]>([]);
 
   const [
     loading,
@@ -257,175 +261,187 @@ export default function MyAppointments() {
   const [
     activeFilter,
     setActiveFilter,
-  ] =
-    useState<FilterType>(
-      "all",
-    );
+  ] = useState<FilterType>("all");
 
   const [
     paymentAppointment,
     setPaymentAppointment,
-  ] =
-    useState<
-      PatientAppointment | null
-    >(null);
+  ] = useState<PatientAppointment | null>(
+    null,
+  );
 
   const [
     cancellingAppointment,
     setCancellingAppointment,
-  ] =
-    useState<
-      PatientAppointment | null
-    >(null);
+  ] = useState<PatientAppointment | null>(
+    null,
+  );
 
   const [
     cancellingId,
     setCancellingId,
-  ] =
-    useState<string | null>(
-      null,
-    );
+  ] = useState<string | null>(
+    null,
+  );
 
-  const fetchAppointments =
-    async (
-      showLoading = true,
-    ) => {
-      try {
-        if (showLoading) {
-          setLoading(true);
-        }
+  const [
+    startingChatId,
+    setStartingChatId,
+  ] = useState<string | null>(
+    null,
+  );
 
-        setError("");
-
-        const data =
-          await getMyAppointments();
-
-        setAppointments(
-          Array.isArray(
-            data.appointments,
-          )
-            ? data.appointments
-            : [],
-        );
-      } catch (error) {
-        setError(
-          getErrorMessage(
-            error,
-            "Failed to load appointments.",
-          ),
-        );
-      } finally {
-        if (showLoading) {
-          setLoading(false);
-        }
+  const fetchAppointments = async (
+    showLoading = true,
+  ) => {
+    try {
+      if (showLoading) {
+        setLoading(true);
       }
-    };
+
+      setError("");
+
+      const data =
+        await getMyAppointments();
+
+      setAppointments(
+        Array.isArray(data.appointments)
+          ? data.appointments
+          : [],
+      );
+    } catch (error) {
+      setError(
+        getErrorMessage(
+          error,
+          "Failed to load appointments.",
+        ),
+      );
+    } finally {
+      if (showLoading) {
+        setLoading(false);
+      }
+    }
+  };
 
   useEffect(() => {
-    fetchAppointments();
+    void fetchAppointments();
   }, []);
 
   const handlePaymentSuccess = (
-    updatedAppointment:
-      PatientAppointment,
+    updatedAppointment: PatientAppointment,
   ) => {
-    setAppointments(
-      (current) =>
-        current.map(
-          (appointment) =>
+    setAppointments((current) =>
+      current.map((appointment) =>
+        appointment._id ===
+        updatedAppointment._id
+          ? updatedAppointment
+          : appointment,
+      ),
+    );
+
+    setPaymentAppointment(null);
+    setError("");
+  };
+
+  const handleCancel = async () => {
+    if (!cancellingAppointment) {
+      return;
+    }
+
+    try {
+      setCancellingId(
+        cancellingAppointment._id,
+      );
+
+      setError("");
+
+      const data =
+        await cancelAppointment(
+          cancellingAppointment._id,
+        );
+
+      const updatedAppointment =
+        data?.appointment as
+          | PatientAppointment
+          | undefined;
+
+      if (updatedAppointment) {
+        setAppointments((current) =>
+          current.map((appointment) =>
             appointment._id ===
             updatedAppointment._id
               ? updatedAppointment
               : appointment,
-        ),
-    );
-
-    setPaymentAppointment(
-      null,
-    );
-
-    setError("");
-  };
-
-  const handleCancel =
-    async () => {
-      if (
-        !cancellingAppointment
-      ) {
-        return;
-      }
-
-      try {
-        setCancellingId(
-          cancellingAppointment._id,
-        );
-
-        setError("");
-
-        const data =
-          await cancelAppointment(
-            cancellingAppointment._id,
-          );
-
-        const updatedAppointment =
-          data?.appointment as
-            | PatientAppointment
-            | undefined;
-
-        if (
-          updatedAppointment
-        ) {
-          setAppointments(
-            (current) =>
-              current.map(
-                (
-                  appointment,
-                ) =>
-                  appointment._id ===
-                  updatedAppointment._id
-                    ? updatedAppointment
-                    : appointment,
-              ),
-          );
-        } else {
-          setAppointments(
-            (current) =>
-              current.map(
-                (
-                  appointment,
-                ) =>
-                  appointment._id ===
-                  cancellingAppointment._id
-                    ? {
-                        ...appointment,
-                        status:
-                          "cancelled",
-                      }
-                    : appointment,
-              ),
-          );
-        }
-
-        setCancellingAppointment(
-          null,
-        );
-      } catch (error) {
-        setError(
-          getErrorMessage(
-            error,
-            "Failed to cancel appointment.",
           ),
         );
-
-        setCancellingAppointment(
-          null,
-        );
-      } finally {
-        setCancellingId(
-          null,
+      } else {
+        setAppointments((current) =>
+          current.map((appointment) =>
+            appointment._id ===
+            cancellingAppointment._id
+              ? {
+                  ...appointment,
+                  status: "cancelled",
+                }
+              : appointment,
+          ),
         );
       }
-    };
+
+      setCancellingAppointment(null);
+    } catch (error) {
+      setError(
+        getErrorMessage(
+          error,
+          "Failed to cancel appointment.",
+        ),
+      );
+
+      setCancellingAppointment(null);
+    } finally {
+      setCancellingId(null);
+    }
+  };
+
+  const handleStartConversation = async (
+    appointment: PatientAppointment,
+  ) => {
+    const doctorId =
+      appointment.doctor?._id;
+
+    if (!doctorId) {
+      setError(
+        "Doctor information is unavailable.",
+      );
+      return;
+    }
+
+    try {
+      setStartingChatId(
+        appointment._id,
+      );
+
+      setError("");
+
+      const conversation =
+        await startConversation(
+          doctorId,
+        );
+
+      navigate(
+        `/chat?conversation=${conversation._id}`,
+      );
+    } catch (error) {
+      setError(
+        getErrorMessage(
+          error,
+          "Unable to start conversation.",
+        ),
+      );
+    } finally {
+      setStartingChatId(null);
+    }
+  };
 
   const counts =
     useMemo(() => {
@@ -528,16 +544,15 @@ export default function MyAppointments() {
             </h1>
 
             <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-500 sm:text-base">
-              View your appointments,
-              complete payments and
-              manage upcoming bookings.
+              View your appointments, complete
+              payments and manage upcoming bookings.
             </p>
           </div>
 
           <button
             type="button"
             onClick={() =>
-              fetchAppointments(
+              void fetchAppointments(
                 false,
               )
             }
@@ -550,8 +565,7 @@ export default function MyAppointments() {
         </div>
 
         {!loading &&
-          appointments.length >
-            0 && (
+          appointments.length > 0 && (
             <div className="mt-8 flex gap-2 overflow-x-auto border-b border-slate-200 pb-3">
               {filters.map(
                 (filter) => {
@@ -636,8 +650,7 @@ export default function MyAppointments() {
               </h2>
 
               <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">
-                Your booked
-                appointments will
+                Your booked appointments will
                 appear here.
               </p>
             </div>
@@ -711,13 +724,25 @@ export default function MyAppointments() {
                     appointment.status ===
                       "pending" &&
                     paymentStatus !==
-                      "paid";
+                      "paid" &&
+                    paymentStatus !==
+                      "refunded";
 
                   const canCancel =
                     appointment.status ===
                       "pending" ||
                     appointment.status ===
                       "confirmed";
+
+                  const canMessage =
+                    Boolean(
+                      appointment.doctor
+                        ?._id,
+                    );
+
+                  const chatLoading =
+                    startingChatId ===
+                    appointment._id;
 
                   return (
                     <article
@@ -781,12 +806,9 @@ export default function MyAppointments() {
                                 </span>
 
                                 <span
-                                  className={`rounded-full border px-3 py-1 text-xs font-bold capitalize ${
-                                    paymentStatus ===
-                                    "paid"
-                                      ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                                      : "border-slate-200 bg-slate-50 text-slate-600"
-                                  }`}
+                                  className={`rounded-full border px-3 py-1 text-xs font-bold capitalize ${getPaymentStyle(
+                                    paymentStatus,
+                                  )}`}
                                 >
                                   Payment:{" "}
                                   {
@@ -798,6 +820,27 @@ export default function MyAppointments() {
                           </div>
 
                           <div className="flex flex-wrap gap-2">
+                            {canMessage && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  void handleStartConversation(
+                                    appointment,
+                                  )
+                                }
+                                disabled={
+                                  chatLoading
+                                }
+                                className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+                              >
+                                <MessageIcon />
+
+                                {chatLoading
+                                  ? "Opening..."
+                                  : "Message doctor"}
+                              </button>
+                            )}
+
                             {canPay && (
                               <button
                                 type="button"
@@ -840,8 +883,7 @@ export default function MyAppointments() {
 
                             <div>
                               <p className="text-xs text-slate-400">
-                                Appointment
-                                date
+                                Appointment date
                               </p>
 
                               <p className="mt-0.5 text-sm font-bold text-slate-800">
@@ -859,8 +901,7 @@ export default function MyAppointments() {
 
                             <div>
                               <p className="text-xs text-slate-400">
-                                Appointment
-                                time
+                                Appointment time
                               </p>
 
                               <p className="mt-0.5 text-sm font-bold text-slate-800">
@@ -890,11 +931,12 @@ export default function MyAppointments() {
                       {appointment.status ===
                         "pending" &&
                         paymentStatus !==
-                          "paid" && (
+                          "paid" &&
+                        paymentStatus !==
+                          "refunded" && (
                           <div className="border-t border-amber-100 bg-amber-50/60 px-5 py-3 sm:px-6">
                             <p className="text-xs font-medium text-amber-700">
-                              Complete
-                              payment to
+                              Complete payment to
                               confirm your
                               appointment.
                             </p>
@@ -905,8 +947,7 @@ export default function MyAppointments() {
                         "confirmed" && (
                         <div className="border-t border-emerald-100 bg-emerald-50/60 px-5 py-3 sm:px-6">
                           <p className="text-xs font-medium text-emerald-700">
-                            Your
-                            appointment is
+                            Your appointment is
                             confirmed.
                           </p>
                         </div>
@@ -916,24 +957,37 @@ export default function MyAppointments() {
                         "completed" && (
                         <div className="border-t border-blue-100 bg-blue-50/60 px-5 py-3 sm:px-6">
                           <p className="text-xs font-medium text-blue-700">
-                            This
-                            appointment
-                            has been
-                            completed.
+                            This appointment has
+                            been completed.
                           </p>
                         </div>
                       )}
 
                       {appointment.status ===
-                        "cancelled" && (
-                        <div className="border-t border-red-100 bg-red-50/60 px-5 py-3 sm:px-6">
-                          <p className="text-xs font-medium text-red-700">
-                            This
-                            appointment
-                            was cancelled.
-                          </p>
-                        </div>
-                      )}
+                        "cancelled" &&
+                        paymentStatus ===
+                          "refunded" && (
+                          <div className="border-t border-blue-100 bg-blue-50/60 px-5 py-3 sm:px-6">
+                            <p className="text-xs font-medium text-blue-700">
+                              This appointment was
+                              cancelled and your
+                              payment has been
+                              refunded.
+                            </p>
+                          </div>
+                        )}
+
+                      {appointment.status ===
+                        "cancelled" &&
+                        paymentStatus !==
+                          "refunded" && (
+                          <div className="border-t border-red-100 bg-red-50/60 px-5 py-3 sm:px-6">
+                            <p className="text-xs font-medium text-red-700">
+                              This appointment was
+                              cancelled.
+                            </p>
+                          </div>
+                        )}
                     </article>
                   );
                 },
@@ -981,8 +1035,7 @@ export default function MyAppointments() {
             </h2>
 
             <p className="mt-2 text-sm leading-6 text-slate-500">
-              Are you sure you
-              want to cancel your
+              Are you sure you want to cancel your
               appointment with Dr.{" "}
               {
                 cancellingAppointment

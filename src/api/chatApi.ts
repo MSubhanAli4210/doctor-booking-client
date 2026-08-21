@@ -10,26 +10,18 @@ export interface ChatUser {
   profilePicture?: string;
 }
 
+export interface ChatDoctor {
+  _id: string;
+  user: ChatUser;
+  specialty?: string;
+}
+
 export interface ChatMessage {
   _id: string;
-
-  conversation:
-    | string
-    | {
-        _id: string;
-      };
-
+  conversation: string | { _id: string };
   sender: string | ChatUser;
-  receiver?: string | ChatUser;
-
-  // supporting different backend field names
-  content?: string;
-  message?: string;
-  text?: string;
-
+  content: string;
   read?: boolean;
-  isRead?: boolean;
-
   createdAt: string;
   updatedAt?: string;
 }
@@ -37,12 +29,11 @@ export interface ChatMessage {
 export interface ChatConversation {
   _id: string;
 
-  participants?: ChatUser[];
+  patient: ChatUser;
+  doctor: ChatDoctor;
 
-  // Some APIs return this directly
-  otherUser?: ChatUser;
-
-  lastMessage?: ChatMessage | null;
+  lastMessage?: string;
+  lastMessageAt?: string;
 
   unreadCount?: number;
 
@@ -50,19 +41,15 @@ export interface ChatConversation {
   updatedAt?: string;
 }
 
-const unwrapArray = <T>(
-  data: any,
-  key: string
-): T[] => {
-  if (Array.isArray(data)) {
-    return data;
-  }
+export const startConversation = async (
+  doctorId: string
+): Promise<ChatConversation> => {
+  const response = await api.post(
+    `${CHAT_BASE}/conversations`,
+    { doctorId }
+  );
 
-  if (Array.isArray(data?.[key])) {
-    return data[key];
-  }
-
-  return [];
+  return response.data.conversation;
 };
 
 export const getConversations = async (): Promise<
@@ -72,10 +59,7 @@ export const getConversations = async (): Promise<
     `${CHAT_BASE}/conversations`
   );
 
-  return unwrapArray<ChatConversation>(
-    response.data,
-    "conversations"
-  );
+  return response.data.conversations ?? [];
 };
 
 export const getConversationMessages = async (
@@ -85,10 +69,7 @@ export const getConversationMessages = async (
     `${CHAT_BASE}/conversations/${conversationId}/messages`
   );
 
-  return unwrapArray<ChatMessage>(
-    response.data,
-    "messages"
-  );
+  return response.data.messages ?? [];
 };
 
 export const sendChatMessage = async (
@@ -97,12 +78,10 @@ export const sendChatMessage = async (
 ): Promise<ChatMessage> => {
   const response = await api.post(
     `${CHAT_BASE}/conversations/${conversationId}/messages`,
-    {
-      content,
-    }
+    { content }
   );
 
-  return response.data?.message ?? response.data;
+  return response.data.message;
 };
 
 export const markConversationRead = async (
@@ -114,3 +93,12 @@ export const markConversationRead = async (
 
   return response.data;
 };
+
+export const getOnlineUsers = async (): Promise<string[]> => {
+  const response = await api.get(
+    `${CHAT_BASE}/online-status`
+  );
+
+  return response.data.onlineUserIds ?? [];
+};
+

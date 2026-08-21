@@ -22,6 +22,7 @@ import AdminPatients from "./pages/AdminPatients";
 import AdminAppointments from "./pages/AdminAppointments";
 
 import PatientProfile from "./pages/PatientProfile";
+import PatientDashboard from "./pages/PatientDashboard";
 
 function App() {
   const { isLoading } = useAuth();
@@ -54,6 +55,15 @@ function App() {
         {/* =========================
             PATIENT ROUTES
         ========================= */}
+
+        <Route
+          path="/patient/dashboard"
+          element={
+            <ProtectedRoute allowedRoles={["patient"]}>
+              <PatientDashboard />
+            </ProtectedRoute>
+          }
+        />
 
         <Route
           path="/my-appointments"

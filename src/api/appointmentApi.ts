@@ -29,10 +29,7 @@ export interface PatientAppointment {
   fees?: number;
 
   payment?: {
-    status:
-      | "unpaid"
-      | "paid"
-      | "failed";
+    status: "unpaid" | "paid" | "failed" | "refunded";
     cardLast4?: string;
     paidAt?: string;
     failureReason?: string | null;
@@ -56,12 +53,10 @@ export interface DoctorAppointment {
   fees?: number;
 
   payment?: {
-    status:
-      | "unpaid"
-      | "paid"
-      | "failed";
+    status: "unpaid" | "paid" | "failed" | "refunded";
     cardLast4?: string;
     paidAt?: string;
+    refundedAt?: string;
     failureReason?: string | null;
   };
 }
@@ -93,80 +88,53 @@ interface PaymentResponse {
 }
 
 export const getMyAppointments =
-  async (): Promise<
-    PatientAppointmentsResponse
-  > => {
+  async (): Promise<PatientAppointmentsResponse> => {
     const response =
-      await api.get<PatientAppointmentsResponse>(
-        "/appointments/my",
-      );
+      await api.get<PatientAppointmentsResponse>("/appointments/my");
 
     return response.data;
   };
 
-export const bookAppointment =
-  async (
-    data: BookAppointmentPayload,
-  ) => {
-    const response =
-      await api.post(
-        "/appointments",
-        data,
-      );
+export const bookAppointment = async (data: BookAppointmentPayload) => {
+  const response = await api.post("/appointments", data);
 
-    return response.data;
-  };
+  return response.data;
+};
 
-export const cancelAppointment =
-  async (
-    appointmentId: string,
-  ) => {
-    const response =
-      await api.patch(
-        `/appointments/${appointmentId}/cancel`,
-      );
+export const cancelAppointment = async (appointmentId: string) => {
+  const response = await api.patch(`/appointments/${appointmentId}/cancel`);
 
-    return response.data;
-  };
+  return response.data;
+};
 
-export const processAppointmentPayment =
-  async (
-    appointmentId: string,
-    data: PaymentPayload,
-  ): Promise<PaymentResponse> => {
-    const response =
-      await api.post<PaymentResponse>(
-        `/appointments/${appointmentId}/payment`,
-        data,
-      );
+export const processAppointmentPayment = async (
+  appointmentId: string,
+  data: PaymentPayload,
+): Promise<PaymentResponse> => {
+  const response = await api.post<PaymentResponse>(
+    `/appointments/${appointmentId}/payment`,
+    data,
+  );
 
-    return response.data;
-  };
+  return response.data;
+};
 
 export const getDoctorAppointments =
-  async (): Promise<
-    DoctorAppointmentsResponse
-  > => {
-    const response =
-      await api.get<DoctorAppointmentsResponse>(
-        "/appointments/doctor",
-      );
+  async (): Promise<DoctorAppointmentsResponse> => {
+    const response = await api.get<DoctorAppointmentsResponse>(
+      "/appointments/doctor",
+    );
 
     return response.data;
   };
 
-export const updateAppointmentStatus =
-  async (
-    appointmentId: string,
-    status: AppointmentStatus,
-  ) => {
-    const response =
-      await api.patch(
-        `/appointments/${appointmentId}/status`,
-        {
-          status,
-        },
-      );
+export const updateAppointmentStatus = async (
+  appointmentId: string,
+  status: AppointmentStatus,
+) => {
+  const response = await api.patch(`/appointments/${appointmentId}/status`, {
+    status,
+  });
 
-    return response.data;
-  };
+  return response.data;
+};
