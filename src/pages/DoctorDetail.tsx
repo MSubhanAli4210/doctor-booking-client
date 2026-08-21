@@ -27,10 +27,6 @@ interface Doctor {
   availability: AvailabilitySlot[];
 }
 
-/* =========================================================
-   ICONS
-========================================================= */
-
 const ArrowLeftIcon = () => (
   <svg
     viewBox="0 0 24 24"
@@ -69,7 +65,11 @@ const ClockIcon = () => (
     strokeWidth="1.8"
   >
     <circle cx="12" cy="12" r="9" />
-    <path strokeLinecap="round" strokeLinejoin="round" d="M12 7v5l3 2" />
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M12 7v5l3 2"
+    />
   </svg>
 );
 
@@ -87,7 +87,10 @@ const DegreeIcon = () => (
       d="m3 9 9-5 9 5-9 5-9-5Z"
     />
 
-    <path strokeLinecap="round" d="M7 12v4.5c3 2 7 2 10 0V12" />
+    <path
+      strokeLinecap="round"
+      d="M7 12v4.5c3 2 7 2 10 0V12"
+    />
   </svg>
 );
 
@@ -99,7 +102,13 @@ const ExperienceIcon = () => (
     stroke="currentColor"
     strokeWidth="1.8"
   >
-    <rect x="3" y="7" width="18" height="13" rx="3" />
+    <rect
+      x="3"
+      y="7"
+      width="18"
+      height="13"
+      rx="3"
+    />
 
     <path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
     <path d="M3 12h18" />
@@ -120,7 +129,11 @@ const ShieldIcon = () => (
       d="M12 3 5 6v5c0 4.8 2.8 8.1 7 10 4.2-1.9 7-5.2 7-10V6l-7-3Z"
     />
 
-    <path strokeLinecap="round" strokeLinejoin="round" d="m9 12 2 2 4-4" />
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="m9 12 2 2 4-4"
+    />
   </svg>
 );
 
@@ -132,189 +145,270 @@ const CheckIcon = () => (
     stroke="currentColor"
     strokeWidth="2.2"
   >
-    <path strokeLinecap="round" strokeLinejoin="round" d="m5 12 4 4L19 6" />
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="m5 12 4 4L19 6"
+    />
   </svg>
 );
-
-/* =========================================================
-   HELPERS
-========================================================= */
 
 const getTodayString = () => {
   const today = new Date();
 
-  const year = today.getFullYear();
+  const year =
+    today.getFullYear();
 
-  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const month =
+    String(
+      today.getMonth() + 1,
+    ).padStart(
+      2,
+      "0",
+    );
 
-  const day = String(today.getDate()).padStart(2, "0");
+  const day =
+    String(
+      today.getDate(),
+    ).padStart(
+      2,
+      "0",
+    );
 
   return `${year}-${month}-${day}`;
 };
 
-const getDayFromDate = (dateString: string) => {
-  if (!dateString) return "";
+const getDayFromDate = (
+  dateString: string,
+) => {
+  if (!dateString) {
+    return "";
+  }
 
-  /*
-    Midday avoids timezone edge cases where midnight
-    can accidentally become the previous/next date.
-  */
+  const date =
+    new Date(
+      `${dateString}T12:00:00`,
+    );
 
-  const date = new Date(`${dateString}T12:00:00`);
-
-  return new Intl.DateTimeFormat("en-US", {
-    weekday: "long",
-  })
+  return new Intl.DateTimeFormat(
+    "en-US",
+    {
+      weekday: "long",
+    },
+  )
     .format(date)
     .toLowerCase();
 };
 
-const capitalize = (value: string) =>
-  value ? value.charAt(0).toUpperCase() + value.slice(1) : "";
+const capitalize = (
+  value: string,
+) =>
+  value
+    ? value
+        .charAt(0)
+        .toUpperCase() +
+      value.slice(1)
+    : "";
 
-/*
-  We still normalize on the frontend for display
-  so older database records containing "Dr." don't
-  accidentally show "Dr. Dr. Ahmed Khan".
-*/
-
-const formatDoctorName = (name: string) => {
-  const cleanName = name
-    .trim()
-    .replace(/^(?:dr\b\s*\.?\s*)+/i, "")
-    .trim();
+const formatDoctorName = (
+  name: string,
+) => {
+  const cleanName =
+    name
+      .trim()
+      .replace(
+        /^(?:dr\b\s*\.?\s*)+/i,
+        "",
+      )
+      .trim();
 
   return `Dr. ${cleanName}`;
 };
 
-/* =========================================================
-   LOADING SKELETON
-========================================================= */
+const DoctorDetailSkeleton =
+  () => (
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mb-6 h-10 w-40 animate-pulse rounded-xl bg-slate-200" />
 
-const DoctorDetailSkeleton = () => (
-  <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-    <div className="mb-6 h-10 w-40 animate-pulse rounded-xl bg-slate-200" />
+      <div className="grid gap-7 lg:grid-cols-[minmax(0,1fr)_390px]">
+        <div className="space-y-6">
+          <div className="rounded-[32px] border border-slate-200 bg-white p-6 sm:p-8">
+            <div className="flex flex-col gap-6 sm:flex-row">
+              <div className="h-36 w-36 animate-pulse rounded-[28px] bg-slate-200" />
 
-    <div className="grid gap-7 lg:grid-cols-[minmax(0,1fr)_390px]">
-      <div className="space-y-6">
-        <div className="rounded-[32px] border border-slate-200 bg-white p-6 sm:p-8">
-          <div className="flex flex-col gap-6 sm:flex-row">
-            <div className="h-36 w-36 animate-pulse rounded-[28px] bg-slate-200" />
+              <div className="flex-1 space-y-4">
+                <div className="h-4 w-28 animate-pulse rounded bg-slate-200" />
 
-            <div className="flex-1 space-y-4">
-              <div className="h-4 w-28 animate-pulse rounded bg-slate-200" />
+                <div className="h-8 w-64 animate-pulse rounded bg-slate-200" />
 
-              <div className="h-8 w-64 animate-pulse rounded bg-slate-200" />
+                <div className="h-4 w-48 animate-pulse rounded bg-slate-200" />
 
-              <div className="h-4 w-48 animate-pulse rounded bg-slate-200" />
+                <div className="grid grid-cols-2 gap-3 pt-3">
+                  <div className="h-20 animate-pulse rounded-2xl bg-slate-100" />
 
-              <div className="grid grid-cols-2 gap-3 pt-3">
-                <div className="h-20 animate-pulse rounded-2xl bg-slate-100" />
-
-                <div className="h-20 animate-pulse rounded-2xl bg-slate-100" />
+                  <div className="h-20 animate-pulse rounded-2xl bg-slate-100" />
+                </div>
               </div>
             </div>
           </div>
+
+          <div className="h-60 animate-pulse rounded-[32px] bg-white" />
         </div>
 
-        <div className="h-60 animate-pulse rounded-[32px] bg-white" />
+        <div className="h-[520px] animate-pulse rounded-[32px] bg-white" />
       </div>
-
-      <div className="h-[520px] animate-pulse rounded-[32px] bg-white" />
     </div>
-  </div>
-);
-
-/* =========================================================
-   COMPONENT
-========================================================= */
+  );
 
 export default function DoctorDetail() {
-  const { id } = useParams();
+  const {
+    id,
+  } = useParams();
 
-  const { user } = useAuth();
+  const {
+    user,
+  } = useAuth();
 
-  const navigate = useNavigate();
+  const navigate =
+    useNavigate();
 
-  const [doctor, setDoctor] = useState<Doctor | null>(null);
+  const [
+    doctor,
+    setDoctor,
+  ] =
+    useState<Doctor | null>(
+      null,
+    );
 
-  const [selectedDay, setSelectedDay] = useState("");
+  const [
+    selectedDay,
+    setSelectedDay,
+  ] =
+    useState("");
 
-  const [selectedTime, setSelectedTime] = useState("");
+  const [
+    selectedTime,
+    setSelectedTime,
+  ] =
+    useState("");
 
-  const [date, setDate] = useState("");
+  const [
+    date,
+    setDate,
+  ] =
+    useState("");
 
-  const [loading, setLoading] = useState(true);
+  const [
+    loading,
+    setLoading,
+  ] =
+    useState(true);
 
-  const [booking, setBooking] = useState(false);
+  const [
+    booking,
+    setBooking,
+  ] =
+    useState(false);
 
-  const [error, setError] = useState("");
-
-  /* =========================================================
-     LOAD DOCTOR
-  ========================================================= */
+  const [
+    error,
+    setError,
+  ] =
+    useState("");
 
   useEffect(() => {
-    const fetchDoctor = async () => {
-      if (!id) {
-        setError("Doctor ID is missing.");
-        setLoading(false);
-        return;
-      }
+    const fetchDoctor =
+      async () => {
+        if (!id) {
+          setError(
+            "Doctor ID is missing.",
+          );
 
-      try {
-        setLoading(true);
-        setError("");
+          setLoading(
+            false,
+          );
 
-        const doctorData = await getDoctorById(id);
+          return;
+        }
 
-        setDoctor(doctorData);
-      } catch (err: any) {
-        setError(
-          err.response?.data?.message ||
-            "Failed to load doctor details. Please try again.",
-        );
+        try {
+          setLoading(
+            true,
+          );
 
-        setDoctor(null);
-      } finally {
-        setLoading(false);
-      }
-    };
+          setError("");
+
+          const doctorData =
+            await getDoctorById(
+              id,
+            );
+
+          setDoctor(
+            doctorData,
+          );
+        } catch (
+          err: any
+        ) {
+          setError(
+            err.response?.data
+              ?.message ||
+              "Failed to load doctor details. Please try again.",
+          );
+
+          setDoctor(
+            null,
+          );
+        } finally {
+          setLoading(
+            false,
+          );
+        }
+      };
 
     fetchDoctor();
   }, [id]);
 
-  /* =========================================================
-     AVAILABILITY
-  ========================================================= */
+  const selectAvailability = (
+    slot: AvailabilitySlot,
+  ) => {
+    setSelectedDay(
+      slot.day,
+    );
 
-  const selectAvailability = (slot: AvailabilitySlot) => {
-    setSelectedDay(slot.day);
-
-    setSelectedTime(`${slot.startTime}-${slot.endTime}`);
-
-    /*
-      Reset date whenever a different availability
-      window is selected.
-    */
+    setSelectedTime(
+      `${slot.startTime}-${slot.endTime}`,
+    );
 
     setDate("");
 
     setError("");
   };
 
-  const handleDateChange = (selectedDate: string) => {
-    setDate(selectedDate);
+  const handleDateChange = (
+    selectedDate: string,
+  ) => {
+    setDate(
+      selectedDate,
+    );
 
     setError("");
 
-    if (!selectedDate || !selectedDay) {
+    if (
+      !selectedDate ||
+      !selectedDay
+    ) {
       return;
     }
 
-    const actualDay = getDayFromDate(selectedDate);
+    const actualDay =
+      getDayFromDate(
+        selectedDate,
+      );
 
-    if (actualDay !== selectedDay.toLowerCase()) {
+    if (
+      actualDay !==
+      selectedDay.toLowerCase()
+    ) {
       setError(
         `Please choose a ${capitalize(
           selectedDay,
@@ -323,87 +417,132 @@ export default function DoctorDetail() {
     }
   };
 
-  /* =========================================================
-     BOOK APPOINTMENT
-  ========================================================= */
+  const handleBook =
+    async () => {
+      if (!user) {
+        navigate(
+          "/login",
+        );
 
-  const handleBook = async () => {
-    if (!user) {
-      navigate("/login");
-      return;
-    }
+        return;
+      }
 
-    if (user.role !== "patient") {
-      setError("Only patients can book appointments.");
+      if (
+        user.role !==
+        "patient"
+      ) {
+        setError(
+          "Only patients can book appointments.",
+        );
 
-      return;
-    }
+        return;
+      }
 
-    if (!doctor) {
-      setError("Doctor information is unavailable.");
+      if (!doctor) {
+        setError(
+          "Doctor information is unavailable.",
+        );
 
-      return;
-    }
+        return;
+      }
 
-    if (!selectedDay || !selectedTime) {
-      setError("Please select an available time first.");
+      if (
+        !selectedDay ||
+        !selectedTime
+      ) {
+        setError(
+          "Please select an available time first.",
+        );
 
-      return;
-    }
+        return;
+      }
 
-    if (!date) {
-      setError("Please select an appointment date.");
+      if (!date) {
+        setError(
+          "Please select an appointment date.",
+        );
 
-      return;
-    }
+        return;
+      }
 
-    /*
-      Prevent dates that don't match the selected
-      availability weekday.
-    */
+      const actualDay =
+        getDayFromDate(
+          date,
+        );
 
-    const actualDay = getDayFromDate(date);
+      if (
+        actualDay !==
+        selectedDay.toLowerCase()
+      ) {
+        setError(
+          `The selected doctor is available on ${capitalize(
+            selectedDay,
+          )}. Please choose a matching date.`,
+        );
 
-    if (actualDay !== selectedDay.toLowerCase()) {
-      setError(
-        `The selected doctor is available on ${capitalize(
-          selectedDay,
-        )}. Please choose a matching date.`,
+        return;
+      }
+
+      const appointmentTime =
+        selectedTime
+          .split("-")[0]
+          ?.trim();
+
+      if (
+        !appointmentTime ||
+        !/^\d{1,2}:\d{2}$/.test(
+          appointmentTime,
+        )
+      ) {
+        setError(
+          "Invalid appointment time.",
+        );
+
+        return;
+      }
+
+      setBooking(
+        true,
       );
 
-      return;
-    }
+      setError("");
 
-    setBooking(true);
+      try {
+        await bookAppointment(
+          {
+            doctorId:
+              doctor._id,
 
-    setError("");
+            date,
 
-    try {
-      await bookAppointment({
-        doctorId: doctor._id,
-        date,
-        time: selectedTime,
-      });
+            time:
+              appointmentTime,
+          },
+        );
 
-      navigate("/my-appointments");
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Failed to book appointment.");
-    } finally {
-      setBooking(false);
-    }
-  };
-
-  /* =========================================================
-     LOADING
-  ========================================================= */
+        navigate(
+          "/my-appointments",
+        );
+      } catch (
+        err: any
+      ) {
+        setError(
+          err.response?.data
+            ?.message ||
+            "Failed to book appointment.",
+        );
+      } finally {
+        setBooking(
+          false,
+        );
+      }
+    };
 
   if (loading) {
-    return <DoctorDetailSkeleton />;
+    return (
+      <DoctorDetailSkeleton />
+    );
   }
-
-  /* =========================================================
-     NOT FOUND / ERROR
-  ========================================================= */
 
   if (!doctor) {
     return (
@@ -418,15 +557,21 @@ export default function DoctorDetail() {
           </h1>
 
           <p className="mt-3 leading-7 text-slate-500">
-            {error || "We couldn't find the doctor you're looking for."}
+            {error ||
+              "We couldn't find the doctor you're looking for."}
           </p>
 
           <button
             type="button"
-            onClick={() => navigate("/")}
+            onClick={() =>
+              navigate(
+                "/",
+              )
+            }
             className="mt-6 inline-flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-bold text-white transition hover:bg-blue-600"
           >
             <ArrowLeftIcon />
+
             Back to doctors
           </button>
         </div>
@@ -435,67 +580,79 @@ export default function DoctorDetail() {
   }
 
   const hasAvailability =
-    Array.isArray(doctor.availability) && doctor.availability.length > 0;
+    Array.isArray(
+      doctor.availability,
+    ) &&
+    doctor.availability
+      .length >
+      0;
 
   const selectedDateMatchesDay =
-    Boolean(date) &&
-    Boolean(selectedDay) &&
-    getDayFromDate(date) === selectedDay.toLowerCase();
+    Boolean(
+      date,
+    ) &&
+    Boolean(
+      selectedDay,
+    ) &&
+    getDayFromDate(
+      date,
+    ) ===
+      selectedDay.toLowerCase();
 
-  const doctorDisplayName = formatDoctorName(doctor.user.name);
+  const doctorDisplayName =
+    formatDoctorName(
+      doctor.user.name,
+    );
 
   return (
     <main className="min-h-screen bg-slate-50/70">
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
-        {/* =====================================================
-            BACK BUTTON
-        ====================================================== */}
-
         <button
           type="button"
-          onClick={() => navigate(-1)}
+          onClick={() =>
+            navigate(
+              -1,
+            )
+          }
           className="mb-6 inline-flex items-center gap-2 rounded-xl px-2 py-2 text-sm font-semibold text-slate-500 transition hover:text-slate-950"
         >
           <ArrowLeftIcon />
+
           Back to doctors
         </button>
 
-        {/* =====================================================
-            MAIN GRID
-        ====================================================== */}
-
         <div className="grid items-start gap-7 lg:grid-cols-[minmax(0,1fr)_400px]">
-          {/* ===================================================
-              LEFT CONTENT
-          ==================================================== */}
-
           <div className="space-y-6">
-            {/* =================================================
-                DOCTOR PROFILE
-            ================================================== */}
-
             <section className="overflow-hidden rounded-[32px] border border-slate-200/80 bg-white shadow-[0_12px_40px_rgba(15,23,42,0.05)]">
               <div className="h-24 bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-400 sm:h-28" />
 
               <div className="px-5 pb-6 sm:px-8 sm:pb-8">
                 <div className="-mt-14 flex flex-col gap-5 sm:-mt-16 sm:flex-row sm:items-end">
-                  {/* Profile image */}
-
                   <div className="h-28 w-28 shrink-0 overflow-hidden rounded-[28px] border-[5px] border-white bg-blue-50 shadow-lg sm:h-32 sm:w-32">
-                    {doctor.user.profilePicture ? (
+                    {doctor.user
+                      .profilePicture ? (
                       <img
-                        src={doctor.user.profilePicture}
-                        alt={doctorDisplayName}
+                        src={
+                          doctor
+                            .user
+                            .profilePicture
+                        }
+                        alt={
+                          doctorDisplayName
+                        }
                         className="h-full w-full object-cover object-top"
                       />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-blue-100 to-cyan-50 text-4xl font-black text-blue-600">
-                        {doctor.user.name?.charAt(0)?.toUpperCase() || "?"}
+                        {doctor.user.name
+                          ?.charAt(
+                            0,
+                          )
+                          ?.toUpperCase() ||
+                          "?"}
                       </div>
                     )}
                   </div>
-
-                  {/* Main information */}
 
                   <div className="flex-1 pb-1">
                     <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
@@ -521,23 +678,26 @@ export default function DoctorDetail() {
                         </div>
 
                         <h1 className="text-2xl font-black tracking-[-0.03em] text-slate-950 sm:text-3xl">
-                          {doctorDisplayName}
+                          {
+                            doctorDisplayName
+                          }
                         </h1>
 
                         <p className="mt-2 font-semibold text-blue-600">
-                          {doctor.specialty}
+                          {
+                            doctor.specialty
+                          }
                         </p>
                       </div>
 
                       <div className="inline-flex w-fit items-center gap-2 rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-600">
                         <ShieldIcon />
+
                         Verified profile
                       </div>
                     </div>
                   </div>
                 </div>
-
-                {/* Stats */}
 
                 <div className="mt-7 grid gap-3 sm:grid-cols-3">
                   <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
@@ -550,7 +710,9 @@ export default function DoctorDetail() {
                     </div>
 
                     <p className="mt-2 font-bold text-slate-900">
-                      {doctor.degree}
+                      {
+                        doctor.degree
+                      }
                     </p>
                   </div>
 
@@ -564,8 +726,13 @@ export default function DoctorDetail() {
                     </div>
 
                     <p className="mt-2 font-bold text-slate-900">
-                      {doctor.experienceYears}{" "}
-                      {doctor.experienceYears === 1 ? "year" : "years"}
+                      {
+                        doctor.experienceYears
+                      }{" "}
+                      {doctor.experienceYears ===
+                      1
+                        ? "year"
+                        : "years"}
                     </p>
                   </div>
 
@@ -579,17 +746,22 @@ export default function DoctorDetail() {
                     </div>
 
                     <p className="mt-2 font-bold text-slate-900">
-                      {doctor.availability?.length || 0} schedule
-                      {doctor.availability?.length === 1 ? "" : "s"}
+                      {doctor
+                        .availability
+                        ?.length ||
+                        0}{" "}
+                      schedule
+                      {doctor
+                        .availability
+                        ?.length ===
+                      1
+                        ? ""
+                        : "s"}
                     </p>
                   </div>
                 </div>
               </div>
             </section>
-
-            {/* =================================================
-                ABOUT
-            ================================================== */}
 
             <section className="rounded-[28px] border border-slate-200/80 bg-white p-5 shadow-[0_8px_30px_rgba(15,23,42,0.04)] sm:p-7">
               <div className="mb-5">
@@ -598,18 +770,25 @@ export default function DoctorDetail() {
                 </p>
 
                 <h2 className="mt-2 text-xl font-black tracking-tight text-slate-900">
-                  About {doctorDisplayName}
+                  About{" "}
+                  {
+                    doctorDisplayName
+                  }
                 </h2>
               </div>
 
               {doctor.about ? (
                 <p className="max-w-3xl text-sm leading-7 text-slate-600 sm:text-base">
-                  {doctor.about}
+                  {
+                    doctor.about
+                  }
                 </p>
               ) : (
                 <p className="text-sm leading-7 text-slate-500">
-                  No additional information has been provided by this doctor
-                  yet.
+                  No additional
+                  information has
+                  been provided by
+                  this doctor yet.
                 </p>
               )}
 
@@ -621,7 +800,9 @@ export default function DoctorDetail() {
                     </p>
 
                     <p className="mt-2 font-bold text-slate-900">
-                      {doctor.specialty}
+                      {
+                        doctor.specialty
+                      }
                     </p>
                   </div>
 
@@ -631,7 +812,9 @@ export default function DoctorDetail() {
                     </p>
 
                     <p className="mt-2 font-bold text-slate-900">
-                      {doctor.degree}
+                      {
+                        doctor.degree
+                      }
                     </p>
                   </div>
 
@@ -641,27 +824,32 @@ export default function DoctorDetail() {
                     </p>
 
                     <p className="mt-2 font-bold text-slate-900">
-                      {doctor.experienceYears}{" "}
-                      {doctor.experienceYears === 1 ? "year" : "years"}
+                      {
+                        doctor.experienceYears
+                      }{" "}
+                      {doctor.experienceYears ===
+                      1
+                        ? "year"
+                        : "years"}
                     </p>
                   </div>
 
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                      Consultation fee
+                      Consultation
+                      fee
                     </p>
 
                     <p className="mt-2 text-xl font-black text-slate-900">
-                      ${doctor.fees}
+                      $
+                      {
+                        doctor.fees
+                      }
                     </p>
                   </div>
                 </div>
               </div>
             </section>
-
-            {/* =================================================
-                HOW BOOKING WORKS
-            ================================================== */}
 
             <section className="rounded-[28px] border border-slate-200/80 bg-white p-5 sm:p-7">
               <h2 className="text-xl font-black tracking-tight text-slate-900">
@@ -679,7 +867,10 @@ export default function DoctorDetail() {
                   </p>
 
                   <p className="mt-1 text-sm leading-6 text-slate-500">
-                    Select one of the doctor's available time windows.
+                    Select one of
+                    the doctor's
+                    available time
+                    windows.
                   </p>
                 </div>
 
@@ -693,7 +884,10 @@ export default function DoctorDetail() {
                   </p>
 
                   <p className="mt-1 text-sm leading-6 text-slate-500">
-                    Choose a date that matches the selected weekday.
+                    Choose a date
+                    that matches
+                    the selected
+                    weekday.
                   </p>
                 </div>
 
@@ -707,29 +901,31 @@ export default function DoctorDetail() {
                   </p>
 
                   <p className="mt-1 text-sm leading-6 text-slate-500">
-                    Review the appointment and confirm your booking.
+                    Review the
+                    appointment and
+                    confirm your
+                    booking.
                   </p>
                 </div>
               </div>
             </section>
           </div>
 
-          {/* ===================================================
-              BOOKING PANEL
-          ==================================================== */}
-
           <aside className="lg:sticky lg:top-24">
             <div className="overflow-hidden rounded-[32px] border border-slate-200/80 bg-white shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
-              {/* Price */}
-
               <div className="border-b border-slate-100 p-5 sm:p-6">
                 <div className="flex items-end justify-between gap-4">
                   <div>
-                    <p className="text-sm text-slate-500">Consultation fee</p>
+                    <p className="text-sm text-slate-500">
+                      Consultation fee
+                    </p>
 
                     <div className="mt-1 flex items-baseline gap-1">
                       <span className="text-3xl font-black tracking-tight text-slate-950">
-                        ${doctor.fees}
+                        $
+                        {
+                          doctor.fees
+                        }
                       </span>
 
                       <span className="text-sm text-slate-400">
@@ -755,14 +951,12 @@ export default function DoctorDetail() {
                   </h2>
 
                   <p className="mt-2 text-sm leading-6 text-slate-500">
-                    Choose an available schedule and a matching appointment
-                    date.
+                    Choose an
+                    available schedule
+                    and a matching
+                    appointment date.
                   </p>
                 </div>
-
-                {/* =============================================
-                    AVAILABLE WINDOWS
-                ============================================== */}
 
                 <div className="mt-7">
                   <div className="mb-3 flex items-center justify-between">
@@ -770,7 +964,9 @@ export default function DoctorDetail() {
                       Available times
                     </label>
 
-                    <span className="text-xs text-slate-400">Step 1 of 2</span>
+                    <span className="text-xs text-slate-400">
+                      Step 1 of 2
+                    </span>
                   </div>
 
                   {!hasAvailability ? (
@@ -780,80 +976,99 @@ export default function DoctorDetail() {
                       </div>
 
                       <p className="mt-3 text-sm font-bold text-slate-700">
-                        No availability set
+                        No availability
+                        set
                       </p>
 
                       <p className="mt-1 text-xs leading-5 text-slate-400">
-                        This doctor hasn't added appointment availability yet.
+                        This doctor
+                        hasn't added
+                        appointment
+                        availability yet.
                       </p>
                     </div>
                   ) : (
                     <div className="space-y-2.5">
-                      {doctor.availability.map((slot) => {
-                        const timeRange = `${slot.startTime}-${slot.endTime}`;
+                      {doctor.availability.map(
+                        (
+                          slot,
+                        ) => {
+                          const timeRange =
+                            `${slot.startTime}-${slot.endTime}`;
 
-                        const isSelected =
-                          selectedDay === slot.day &&
-                          selectedTime === timeRange;
+                          const isSelected =
+                            selectedDay ===
+                              slot.day &&
+                            selectedTime ===
+                              timeRange;
 
-                        return (
-                          <button
-                            key={`${slot.day}-${slot.startTime}-${slot.endTime}`}
-                            type="button"
-                            onClick={() => selectAvailability(slot)}
-                            className={`flex w-full items-center justify-between rounded-2xl border p-3.5 text-left transition-all ${
-                              isSelected
-                                ? "border-blue-600 bg-blue-50 shadow-[0_5px_20px_rgba(37,99,235,0.10)]"
-                                : "border-slate-200 bg-white hover:border-blue-200 hover:bg-blue-50/50"
-                            }`}
-                          >
-                            <div className="flex items-center gap-3">
-                              <div
-                                className={`flex h-10 w-10 items-center justify-center rounded-xl ${
-                                  isSelected
-                                    ? "bg-blue-600 text-white"
-                                    : "bg-slate-100 text-slate-500"
-                                }`}
-                              >
-                                <ClockIcon />
-                              </div>
-
-                              <div>
-                                <p
-                                  className={`text-sm font-bold capitalize ${
-                                    isSelected
-                                      ? "text-blue-700"
-                                      : "text-slate-800"
-                                  }`}
-                                >
-                                  {slot.day}
-                                </p>
-
-                                <p className="mt-0.5 text-xs text-slate-500">
-                                  {slot.startTime} – {slot.endTime}
-                                </p>
-                              </div>
-                            </div>
-
-                            <div
-                              className={`flex h-6 w-6 items-center justify-center rounded-full border ${
+                          return (
+                            <button
+                              key={`${slot.day}-${slot.startTime}-${slot.endTime}`}
+                              type="button"
+                              onClick={() =>
+                                selectAvailability(
+                                  slot,
+                                )
+                              }
+                              className={`flex w-full items-center justify-between rounded-2xl border p-3.5 text-left transition-all ${
                                 isSelected
-                                  ? "border-blue-600 bg-blue-600 text-white"
-                                  : "border-slate-300 text-transparent"
+                                  ? "border-blue-600 bg-blue-50 shadow-[0_5px_20px_rgba(37,99,235,0.10)]"
+                                  : "border-slate-200 bg-white hover:border-blue-200 hover:bg-blue-50/50"
                               }`}
                             >
-                              <CheckIcon />
-                            </div>
-                          </button>
-                        );
-                      })}
+                              <div className="flex items-center gap-3">
+                                <div
+                                  className={`flex h-10 w-10 items-center justify-center rounded-xl ${
+                                    isSelected
+                                      ? "bg-blue-600 text-white"
+                                      : "bg-slate-100 text-slate-500"
+                                  }`}
+                                >
+                                  <ClockIcon />
+                                </div>
+
+                                <div>
+                                  <p
+                                    className={`text-sm font-bold capitalize ${
+                                      isSelected
+                                        ? "text-blue-700"
+                                        : "text-slate-800"
+                                    }`}
+                                  >
+                                    {
+                                      slot.day
+                                    }
+                                  </p>
+
+                                  <p className="mt-0.5 text-xs text-slate-500">
+                                    {
+                                      slot.startTime
+                                    }{" "}
+                                    –{" "}
+                                    {
+                                      slot.endTime
+                                    }
+                                  </p>
+                                </div>
+                              </div>
+
+                              <div
+                                className={`flex h-6 w-6 items-center justify-center rounded-full border ${
+                                  isSelected
+                                    ? "border-blue-600 bg-blue-600 text-white"
+                                    : "border-slate-300 text-transparent"
+                                }`}
+                              >
+                                <CheckIcon />
+                              </div>
+                            </button>
+                          );
+                        },
+                      )}
                     </div>
                   )}
                 </div>
-
-                {/* =============================================
-                    DATE
-                ============================================== */}
 
                 <div className="mt-7">
                   <div className="mb-3 flex items-center justify-between">
@@ -864,12 +1079,16 @@ export default function DoctorDetail() {
                       Appointment date
                     </label>
 
-                    <span className="text-xs text-slate-400">Step 2 of 2</span>
+                    <span className="text-xs text-slate-400">
+                      Step 2 of 2
+                    </span>
                   </div>
 
                   {!selectedDay ? (
                     <div className="rounded-2xl bg-slate-50 px-4 py-4 text-sm text-slate-400">
-                      Select an available time first.
+                      Select an
+                      available time
+                      first.
                     </div>
                   ) : (
                     <>
@@ -881,11 +1100,23 @@ export default function DoctorDetail() {
                         <input
                           id="appointment-date"
                           type="date"
-                          min={getTodayString()}
-                          value={date}
-                          onChange={(e) => handleDateChange(e.target.value)}
+                          min={
+                            getTodayString()
+                          }
+                          value={
+                            date
+                          }
+                          onChange={(
+                            e,
+                          ) =>
+                            handleDateChange(
+                              e.target
+                                .value,
+                            )
+                          }
                           className={`h-14 w-full rounded-2xl border bg-white pl-12 pr-4 text-sm font-semibold text-slate-800 outline-none transition focus:ring-4 ${
-                            date && !selectedDateMatchesDay
+                            date &&
+                            !selectedDateMatchesDay
                               ? "border-red-300 focus:border-red-400 focus:ring-red-50"
                               : "border-slate-200 focus:border-blue-400 focus:ring-blue-50"
                           }`}
@@ -893,31 +1124,31 @@ export default function DoctorDetail() {
                       </div>
 
                       <p className="mt-2.5 text-xs leading-5 text-slate-400">
-                        Please choose a{" "}
+                        Please choose
+                        a{" "}
                         <span className="font-bold capitalize text-slate-600">
-                          {selectedDay}
+                          {
+                            selectedDay
+                          }
                         </span>{" "}
-                        because that matches the selected availability.
+                        because that
+                        matches the
+                        selected
+                        availability.
                       </p>
                     </>
                   )}
                 </div>
 
-                {/* =============================================
-                    ERROR
-                ============================================== */}
-
                 {error && (
                   <div className="mt-5 rounded-2xl border border-red-100 bg-red-50 px-4 py-3.5">
                     <p className="text-sm font-medium leading-6 text-red-700">
-                      {error}
+                      {
+                        error
+                      }
                     </p>
                   </div>
                 )}
-
-                {/* =============================================
-                    BOOKING SUMMARY
-                ============================================== */}
 
                 {selectedDay &&
                   selectedTime &&
@@ -930,60 +1161,82 @@ export default function DoctorDetail() {
 
                       <div className="mt-3 space-y-2">
                         <div className="flex items-center justify-between gap-3 text-sm">
-                          <span className="text-slate-500">Doctor</span>
+                          <span className="text-slate-500">
+                            Doctor
+                          </span>
 
                           <span className="text-right font-bold text-slate-900">
-                            {doctorDisplayName}
+                            {
+                              doctorDisplayName
+                            }
                           </span>
                         </div>
 
                         <div className="flex items-center justify-between gap-3 text-sm">
-                          <span className="text-slate-500">Day</span>
+                          <span className="text-slate-500">
+                            Day
+                          </span>
 
                           <span className="font-bold capitalize text-slate-900">
-                            {selectedDay}
+                            {
+                              selectedDay
+                            }
                           </span>
                         </div>
 
                         <div className="flex items-center justify-between gap-3 text-sm">
-                          <span className="text-slate-500">Date</span>
+                          <span className="text-slate-500">
+                            Date
+                          </span>
 
                           <span className="font-bold text-slate-900">
-                            {date}
+                            {
+                              date
+                            }
                           </span>
                         </div>
 
                         <div className="flex items-center justify-between gap-3 text-sm">
-                          <span className="text-slate-500">Time</span>
+                          <span className="text-slate-500">
+                            Time
+                          </span>
 
                           <span className="font-bold text-slate-900">
-                            {selectedTime.replace("-", " – ")}
+                            {selectedTime.replace(
+                              "-",
+                              " – ",
+                            )}
                           </span>
                         </div>
                       </div>
                     </div>
                   )}
 
-                {/* =============================================
-                    BUTTON
-                ============================================== */}
-
                 <button
                   type="button"
-                  onClick={handleBook}
-                  disabled={booking || !hasAvailability}
+                  onClick={
+                    handleBook
+                  }
+                  disabled={
+                    booking ||
+                    !hasAvailability
+                  }
                   className="mt-6 flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition-all hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-xl active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
                 >
                   {booking ? (
                     <>
                       <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                      Booking appointment...
+
+                      Booking
+                      appointment...
                     </>
                   ) : (
                     <>
                       <CalendarIcon />
 
-                      {user ? "Book appointment" : "Login to book"}
+                      {user
+                        ? "Book appointment"
+                        : "Login to book"}
                     </>
                   )}
                 </button>
@@ -994,8 +1247,10 @@ export default function DoctorDetail() {
                   </span>
 
                   <p className="text-xs leading-5 text-slate-400">
-                    Your appointment is only created after you confirm the
-                    booking.
+                    Your appointment
+                    is only created
+                    after you confirm
+                    the booking.
                   </p>
                 </div>
               </div>
