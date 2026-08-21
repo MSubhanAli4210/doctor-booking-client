@@ -256,7 +256,7 @@ const availabilityToRanges = (
 ): AvailabilityRange[] => {
   const ranges: AvailabilityRange[] = [];
 
-  DAYS.forEach(({ key, label }) => {
+  DAYS.forEach(({ key }) => {
     const times = [...availability[key]].sort((first, second) =>
       first.localeCompare(second),
     );
@@ -272,7 +272,6 @@ const availabilityToRanges = (
     }
 
     let rangeStart = firstTime;
-
     let previousTime = firstTime;
 
     for (let index = 1; index < times.length; index += 1) {
@@ -288,6 +287,7 @@ const availabilityToRanges = (
           startTime: minutesToTime(rangeStart),
           endTime: minutesToTime(previousTime + 30),
         });
+
         rangeStart = currentTime;
       }
 
