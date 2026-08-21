@@ -23,6 +23,7 @@ import AdminAppointments from "./pages/AdminAppointments";
 
 import PatientProfile from "./pages/PatientProfile";
 import PatientDashboard from "./pages/PatientDashboard";
+import Footer from "./components/Footer";
 
 function App() {
   const { isLoading } = useAuth();
@@ -176,6 +177,8 @@ function App() {
           }
         />
       </Routes>
+
+      <Footer />
     </>
   );
 }
